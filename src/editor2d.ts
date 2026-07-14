@@ -6,7 +6,7 @@ import {
   snapDoorToNearestWall,
   splitWallAtOpenings,
 } from './doors';
-import { cornerSofaLayout, pointInCornerSofa } from './cornerSofa';
+import { cornerSofaLayout, cornerSofaSide, isCornerSofa, pointInCornerSofa } from './cornerSofa';
 
 interface Point {
   x: number;
@@ -150,8 +150,8 @@ export class Editor2D {
       const dy = p.y - f.y;
       const lx = dx * Math.cos(rad) - dy * Math.sin(rad);
       const ly = dx * Math.sin(rad) + dy * Math.cos(rad);
-      if (f.type === 'sofa_corner') {
-        if (pointInCornerSofa(lx, ly, f.width, f.depth)) return f;
+      if (isCornerSofa(f.type)) {
+        if (pointInCornerSofa(lx, ly, f.width, f.depth, cornerSofaSide(f.type))) return f;
         continue;
       }
       if (Math.abs(lx) <= f.width / 2 && Math.abs(ly) <= f.depth / 2) return f;
@@ -555,7 +555,7 @@ export class Editor2D {
       this.drawDoor(ctx, f);
       return;
     }
-    if (f.type === 'sofa_corner') {
+    if (isCornerSofa(f.type)) {
       this.drawCornerSofa(ctx, f);
       return;
     }
@@ -642,7 +642,7 @@ export class Editor2D {
 
   private drawCornerSofa(ctx: CanvasRenderingContext2D, f: FurnitureItem): void {
     const selected = this.store.selection?.kind === 'furniture' && this.store.selection.id === f.id;
-    const layout = cornerSofaLayout(f.width, f.depth);
+    const layout = cornerSofaLayout(f.width, f.depth, cornerSofaSide(f.type));
 
     ctx.save();
     ctx.translate(f.x, f.y);

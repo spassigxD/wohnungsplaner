@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type { FurnitureItem } from './model';
 import { getCatalogEntry } from './catalog';
 import { woodGrainTexture, fabricTexture } from './textures';
-import { cornerSofaLayout } from './cornerSofa';
+import { cornerSofaLayout, cornerSofaSide } from './cornerSofa';
 import {
   buildBreakfastBar,
   buildKitchenBaseCabinet,
@@ -106,24 +106,28 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
       g.add(box(armW, h * 0.75, d, base, w / 2 - armW / 2, 0));
       break;
     }
-    case 'sofa_corner': {
+    case 'sofa_corner':
+    case 'sofa_corner_left': {
       const base = fabric(c);
-      const layout = cornerSofaLayout(item.width, item.depth);
+      const side = cornerSofaSide(item.type);
+      const layout = cornerSofaLayout(item.width, item.depth, side);
       const seatD = layout.seatDepth / 100;
       const hw = w / 2;
       const hd = d / 2;
       const chaiseLen = layout.chaise.h / 100;
       const mainZ = -hd + seatD / 2;
       const chaiseZ = hd - chaiseLen / 2;
-      const chaiseX = hw - seatD / 2;
+      const chaiseX = side === 'right' ? hw - seatD / 2 : -hw + seatD / 2;
+      const chaiseBackX = side === 'right' ? hw - seatD * 0.14 : -hw + seatD * 0.14;
+      const mainArmX = side === 'right' ? -w / 2 + Math.min(0.18, seatD * 0.75) / 2 : w / 2 - Math.min(0.18, seatD * 0.75) / 2;
 
       g.add(box(w, h * 0.45, seatD, base, 0, 0, mainZ));
       g.add(box(w, h, seatD * 0.28, base, 0, 0, -hd + seatD - seatD * 0.14));
       g.add(box(seatD, h * 0.45, chaiseLen, base, chaiseX, 0, chaiseZ));
-      g.add(box(seatD * 0.28, h, chaiseLen, base, hw - seatD * 0.14, 0, chaiseZ));
+      g.add(box(seatD * 0.28, h, chaiseLen, base, chaiseBackX, 0, chaiseZ));
 
       const armW = Math.min(0.18, seatD * 0.75);
-      g.add(box(armW, h * 0.75, seatD, base, -w / 2 + armW / 2, 0, mainZ));
+      g.add(box(armW, h * 0.75, seatD, base, mainArmX, 0, mainZ));
       g.add(box(armW, h * 0.75, chaiseLen, base, chaiseX, 0, chaiseZ));
       break;
     }
