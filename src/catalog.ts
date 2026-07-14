@@ -51,6 +51,7 @@ export const CATALOG: CatalogEntry[] = [
   entry('sideboard', 'Kommode / Sideboard', 'Wohnen', 120, 42, 80, '#b39b7d'),
   entry('rug', 'Teppich', 'Wohnen', 200, 140, 1, '#b08968'),
   entry('plant', 'Zimmerpflanze', 'Wohnen', 45, 45, 160, '#3f7a3f'),
+  entry('piano', 'Klavier', 'Wohnen', 150, 60, 120, '#1c1c20'),
   // Schlafen
   entry('bed', 'Doppelbett (160x200)', 'Schlafen', 160, 200, 45, '#7c9ab0'),
   entry('bed_single', 'Einzelbett (90x200)', 'Schlafen', 90, 200, 45, '#9ab07c'),

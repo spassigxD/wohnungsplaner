@@ -559,6 +559,10 @@ export class Editor2D {
       this.drawCornerSofa(ctx, f);
       return;
     }
+    if (f.type === 'piano') {
+      this.drawPiano(ctx, f);
+      return;
+    }
 
     const selected = this.store.selection?.kind === 'furniture' && this.store.selection.id === f.id;
 
@@ -723,6 +727,75 @@ export class Editor2D {
         f.y + f.depth / 2 + 16 / this.zoom
       );
       ctx.textAlign = 'start';
+    }
+  }
+
+  private drawPiano(ctx: CanvasRenderingContext2D, f: FurnitureItem): void {
+    const selected = this.store.selection?.kind === 'furniture' && this.store.selection.id === f.id;
+
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate((f.rotation * Math.PI) / 180);
+
+    const hw = f.width / 2;
+    const hd = f.depth / 2;
+
+    ctx.fillStyle = withAlpha(f.color, 0.92);
+    ctx.fillRect(-hw, -hd, f.width, f.depth);
+    ctx.strokeStyle = selected ? '#50a0ff' : 'rgba(0,0,0,0.6)';
+    ctx.lineWidth = (selected ? 2.5 : 1.2) / this.zoom;
+    ctx.strokeRect(-hw, -hd, f.width, f.depth);
+
+    // Klaviatur an der Vorderseite (-Y)
+    const kbD = f.depth * 0.38;
+    ctx.fillStyle = 'rgba(242,239,232,0.95)';
+    ctx.fillRect(-hw * 0.9, -hd, f.width * 0.9, kbD);
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 1 / this.zoom;
+    ctx.strokeRect(-hw * 0.9, -hd, f.width * 0.9, kbD);
+
+    // Schwarze Tasten angedeutet
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    const keyW = (f.width * 0.9) / 14;
+    for (let i = 0; i < 14; i++) {
+      if (i % 3 === 1) {
+        ctx.fillRect(-hw * 0.9 + i * keyW + keyW * 0.15, -hd, keyW * 0.55, kbD * 0.55);
+      }
+    }
+
+    // Vorderseiten-Markierung
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.beginPath();
+    ctx.moveTo(-hw * 0.2, -hd);
+    ctx.lineTo(0, -hd - Math.min(8, hd * 0.3));
+    ctx.lineTo(hw * 0.2, -hd);
+    ctx.stroke();
+
+    ctx.restore();
+
+    const fontPx = 11 / this.zoom;
+    if (f.width * this.zoom > 50) {
+      ctx.font = `${fontPx}px system-ui, sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(f.name, f.x, f.y, f.width * 0.85);
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+    }
+
+    if (selected) {
+      const handle = this.rotationHandlePos(f);
+      ctx.strokeStyle = '#50a0ff';
+      ctx.lineWidth = 1.5 / this.zoom;
+      ctx.beginPath();
+      ctx.moveTo(f.x, f.y);
+      ctx.lineTo(handle.x, handle.y);
+      ctx.stroke();
+      ctx.fillStyle = '#50a0ff';
+      ctx.beginPath();
+      ctx.arc(handle.x, handle.y, 7 / this.zoom, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 

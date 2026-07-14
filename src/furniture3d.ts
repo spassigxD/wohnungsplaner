@@ -544,6 +544,48 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
       g.add(mirror);
       break;
     }
+    case 'piano': {
+      const body = mat('#141418', { roughness: 0.35, metalness: 0.15 });
+      const wood = mat('#2a2520', { roughness: 0.45 });
+      const keyWhite = mat('#f2efe8', { roughness: 0.55 });
+      const keyBlack = mat('#101014', { roughness: 0.5 });
+      const legH = 0.1;
+      const cabinetH = h - legH;
+
+      // Beine
+      for (const [lx, lz] of [
+        [-w / 2 + 0.08, -d / 2 + 0.08],
+        [w / 2 - 0.08, -d / 2 + 0.08],
+        [-w / 2 + 0.08, d / 2 - 0.08],
+        [w / 2 - 0.08, d / 2 - 0.08],
+      ]) {
+        g.add(box(0.07, legH, 0.07, wood, lx, 0, lz));
+      }
+
+      // Gehäuse
+      g.add(box(w * 0.98, cabinetH * 0.92, d * 0.96, body, 0, legH, 0));
+
+      // Klaviatur (leicht nach vorne geneigt)
+      const kb = new THREE.Group();
+      kb.add(box(w * 0.88, 0.03, d * 0.42, keyWhite, 0, 0, 0));
+      for (let i = -18; i <= 18; i++) {
+        if (Math.abs(i) % 3 !== 0) continue;
+        kb.add(box(0.012, 0.035, d * 0.2, keyBlack, i * 0.018, 0.01, -d * 0.08));
+      }
+      kb.position.set(0, legH + cabinetH * 0.58, -d / 2 + d * 0.22);
+      kb.rotation.x = -0.18;
+      g.add(kb);
+
+      // Notenpult
+      g.add(box(w * 0.55, 0.02, d * 0.18, wood, 0, legH + cabinetH * 0.78, -d / 2 + d * 0.12));
+      g.add(box(w * 0.5, cabinetH * 0.18, 0.03, body, 0, legH + cabinetH * 0.7, -d / 2 + 0.02));
+
+      // Pedale
+      for (const px of [-0.1, 0, 0.1]) {
+        g.add(box(0.05, 0.02, 0.12, mat('#b8bec4', { metalness: 0.8, roughness: 0.25 }), px, legH + 0.02, -d / 2 + 0.08));
+      }
+      break;
+    }
     default: {
       const entry = getCatalogEntry(item.type);
       g.add(box(w, h, d, mat(entry?.color ?? c)));
