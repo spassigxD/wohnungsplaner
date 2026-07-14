@@ -187,6 +187,28 @@ function actionRow(label: string, className: string, onClick: () => void): HTMLE
   return btn;
 }
 
+function rotationButtons(f: FurnitureItem, onChange: () => void): HTMLElement {
+  const row = document.createElement('div');
+  row.className = 'rotation-buttons';
+  const rotate = (delta: number) => {
+    f.rotation = ((f.rotation + delta) % 360 + 360) % 360;
+    onChange();
+  };
+  for (const [label, delta] of [
+    ['−90°', -90],
+    ['−15°', -15],
+    ['+15°', 15],
+    ['+90°', 90],
+  ] as const) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = label;
+    btn.addEventListener('click', () => rotate(delta));
+    row.appendChild(btn);
+  }
+  return row;
+}
+
 function renderFurnitureProps(body: HTMLElement, store: Store, f: FurnitureItem): void {
   const commit = () => store.emit();
 
@@ -199,6 +221,7 @@ function renderFurnitureProps(body: HTMLElement, store: Store, f: FurnitureItem)
       field: 'rotation',
     })
   );
+  body.appendChild(rotationButtons(f, commit));
 
   const size = document.createElement('div');
   size.className = 'prop-section';

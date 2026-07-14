@@ -9,6 +9,7 @@ type DragState =
   | { kind: 'none' }
   | { kind: 'pan'; startClient: Point; startView: Point }
   | { kind: 'furniture'; id: string; offset: Point }
+  | { kind: 'furniture-rotate'; id: string }
   | { kind: 'wall-endpoint'; id: string; end: 1 | 2 }
   | { kind: 'wall-body'; id: string; start: Point; orig: { x1: number; y1: number; x2: number; y2: number } }
   | { kind: 'draw-wall'; start: Point; current: Point };
@@ -163,6 +164,28 @@ export class Editor2D {
     return null;
   }
 
+  private rotationHandlePos(f: FurnitureItem): Point {
+    const rad = (f.rotation * Math.PI) / 180;
+    const dist = Math.max(f.width, f.depth) / 2 + 20 / this.zoom;
+    return {
+      x: f.x + Math.sin(rad) * dist,
+      y: f.y - Math.cos(rad) * dist,
+    };
+  }
+
+  private hitRotationHandle(p: Point, f: FurnitureItem): boolean {
+    const handle = this.rotationHandlePos(f);
+    return Math.hypot(p.x - handle.x, p.y - handle.y) < 12 / this.zoom;
+  }
+
+  private setFurnitureRotation(f: FurnitureItem, world: Point, freeAngle: boolean): void {
+    const dx = world.x - f.x;
+    const dy = world.y - f.y;
+    let deg = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
+    if (!freeAngle) deg = Math.round(deg / 15) * 15;
+    f.rotation = ((deg % 360) + 360) % 360;
+  }
+
   // ---------- Events ----------
 
   private onMouseDown(e: MouseEvent): void {
@@ -192,6 +215,12 @@ export class Editor2D {
         this.drag = { kind: 'wall-endpoint', id: selWall.id, end };
         return;
       }
+    }
+
+    const selFurniture = this.store.getSelectedFurniture();
+    if (selFurniture && this.hitRotationHandle(world, selFurniture)) {
+      this.drag = { kind: 'furniture-rotate', id: selFurniture.id };
+      return;
     }
 
     const f = this.hitFurniture(world);
@@ -246,6 +275,14 @@ export class Editor2D {
         if (f) {
           f.x = this.snap(world.x - this.drag.offset.x);
           f.y = this.snap(world.y - this.drag.offset.y);
+          this.store.emit();
+        }
+        break;
+      }
+      case 'furniture-rotate': {
+        const f = this.store.getFurniture(this.drag.id);
+        if (f) {
+          this.setFurnitureRotation(f, world, e.shiftKey);
           this.store.emit();
         }
         break;
@@ -540,12 +577,28 @@ export class Editor2D {
     }
 
     if (selected) {
+      const handle = this.rotationHandlePos(f);
+      ctx.strokeStyle = '#50a0ff';
+      ctx.lineWidth = 1.5 / this.zoom;
+      ctx.beginPath();
+      ctx.moveTo(f.x, f.y);
+      ctx.lineTo(handle.x, handle.y);
+      ctx.stroke();
+
+      ctx.fillStyle = '#50a0ff';
+      ctx.beginPath();
+      ctx.arc(handle.x, handle.y, 7 / this.zoom, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5 / this.zoom;
+      ctx.stroke();
+
       const fontPx = 12 / this.zoom;
       ctx.font = `${fontPx}px system-ui, sans-serif`;
       ctx.fillStyle = '#50a0ff';
       ctx.textAlign = 'center';
       ctx.fillText(
-        `${formatCm(f.width)} × ${formatCm(f.depth)}`,
+        `${formatCm(f.width)} × ${formatCm(f.depth)} · ${Math.round(f.rotation)}°`,
         f.x,
         f.y + Math.max(f.width, f.depth) / 2 + 16 / this.zoom
       );

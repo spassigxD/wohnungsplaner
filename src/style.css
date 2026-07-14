@@ -325,6 +325,19 @@ button.danger:hover {
   background: #6e3434;
 }
 
+.rotation-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+
+.rotation-buttons button {
+  width: 100%;
+  padding: 6px 4px;
+  font-size: 12px;
+}
+
 .prop-actions {
   display: flex;
   flex-direction: column;
