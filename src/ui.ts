@@ -1,7 +1,7 @@
 import { Store, FurnitureItem, Wall, uid } from './model';
 import { CATALOG, CATEGORIES } from './catalog';
 import { Editor2D } from './editor2d';
-import { isDoor, snapDoorToNearestWall } from './doors';
+import { isDoor, placeDoorOnWall, snapDoorToNearestWall } from './doors';
 
 export function setupUI(store: Store, editor: Editor2D): void {
   setupToolbar(store, editor);
@@ -106,7 +106,12 @@ function setupCatalog(store: Store, editor: Editor2D): void {
         };
         store.setTool('select');
         if (isDoor(item.type)) {
-          snapDoorToNearestWall(item, store.apartment.walls, store.snap);
+          const selectedWall = store.getSelectedWall();
+          if (selectedWall) {
+            placeDoorOnWall(item, selectedWall, editor.viewCenterWorld(), store.snap);
+          } else {
+            snapDoorToNearestWall(item, store.apartment.walls, store.snap);
+          }
         }
         store.addFurniture(item);
       });
@@ -333,6 +338,11 @@ function renderWallProps(body: HTMLElement, store: Store, w: Wall): void {
   look.innerHTML = '<h3>Aussehen</h3>';
   look.appendChild(colorRow('Wandfarbe', w.color, (v) => ((w.color = v), commit()), 'color'));
   body.appendChild(look);
+
+  const hint = document.createElement('p');
+  hint.className = 'prop-hint';
+  hint.textContent = 'Tür im Katalog wählen, um sie genau in dieser Wand zu platzieren (an der sichtbaren Stelle).';
+  body.appendChild(hint);
 
   const actions = document.createElement('div');
   actions.className = 'prop-actions';

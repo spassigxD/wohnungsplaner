@@ -47,7 +47,7 @@ npm run dev
 | Wand zeichnen | Werkzeug „Wand zeichnen“, dann klicken & ziehen (`Shift` = freier Winkel) |
 | Auswählen / verschieben | Werkzeug „Auswählen“, Element anklicken und ziehen |
 | Duplizieren | `Strg+D` / `Cmd+D` oder Button im Eigenschaften-Panel |
-| Tür platzieren | Im Katalog unter „Türen“ wählen und an eine Wand setzen |
+| Tür platzieren | Wand auswählen, dann Tür im Katalog wählen – sie wird in dieser Wand platziert |
 | Möbel drehen | Blauen Griff ziehen, `R` (+15°), `Shift+R` (−15°), Buttons oder Gradzahl im Panel |
 | Löschen | `Entf` / `Backspace` |
 | Ansicht verschieben | Rechte Maustaste ziehen oder `Leertaste` + ziehen |

@@ -68,6 +68,18 @@ export function snapDoorToNearestWall(door: FurnitureItem, walls: Wall[], snap =
   return true;
 }
 
+/** Platziert eine Tür auf einer bestimmten Wand (z. B. die gerade ausgewählte). */
+export function placeDoorOnWall(
+  door: FurnitureItem,
+  wall: Wall,
+  anchor: { x: number; y: number },
+  snap = 5
+): void {
+  door.x = anchor.x;
+  door.y = anchor.y;
+  snapDoorToWall(door, wall, snap);
+}
+
 export function doorOpeningOnWall(
   door: FurnitureItem,
   wall: Wall,
