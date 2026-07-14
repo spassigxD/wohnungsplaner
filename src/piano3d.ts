@@ -3,10 +3,10 @@ import * as THREE from 'three';
 function lacquer(color: string): THREE.MeshPhysicalMaterial {
   return new THREE.MeshPhysicalMaterial({
     color,
-    roughness: 0.12,
-    metalness: 0.08,
-    clearcoat: 0.85,
-    clearcoatRoughness: 0.15,
+    roughness: 0.08,
+    metalness: 0.12,
+    clearcoat: 1,
+    clearcoatRoughness: 0.1,
   });
 }
 
@@ -18,79 +18,90 @@ function box(w: number, h: number, d: number, material: THREE.Material, x = 0, y
   return m;
 }
 
-function cylinder(r: number, h: number, material: THREE.Material, x: number, y: number, z: number): THREE.Mesh {
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 16), material);
-  m.position.set(x, y + h / 2, z);
-  m.castShadow = true;
-  m.receiveShadow = true;
-  return m;
-}
-
-/** Aufrechtklavier mit erkennbarer Silhouette, Klaviatur und Pedalen. */
+/**
+ * Aufrechtklavier nach Yamaha/Steinway-Maßen (~150×60×120 cm).
+ * Vorderseite (-Z): Tasten, Pedale, Notenpult. Korpus liegt hinten.
+ */
 export function buildPiano3D(g: THREE.Group, w: number, d: number, h: number, color: string): void {
-  const body = lacquer(color);
-  const bodyDark = lacquer('#0a0a0c');
-  const ivory = new THREE.MeshStandardMaterial({ color: '#f0e8d8', roughness: 0.38 });
-  const ebony = new THREE.MeshStandardMaterial({ color: '#111114', roughness: 0.35 });
-  const brass = new THREE.MeshStandardMaterial({ color: '#c8a030', metalness: 0.92, roughness: 0.28 });
-  const chrome = new THREE.MeshStandardMaterial({ color: '#a8b2bc', metalness: 0.9, roughness: 0.18 });
+  const black = lacquer(color);
+  const blackDeep = lacquer('#08080a');
+  const ivory = new THREE.MeshStandardMaterial({ color: '#eee6d6', roughness: 0.35 });
+  const ebony = new THREE.MeshStandardMaterial({ color: '#0c0c10', roughness: 0.3 });
+  const brass = new THREE.MeshStandardMaterial({ color: '#c4a028', metalness: 0.94, roughness: 0.25 });
 
-  const baseH = 0.11;
+  const baseH = 0.12;
   const bodyH = h - baseH;
-  const cheekW = w * 0.1;
-  const cabinetD = d * 0.72;
-  const keyProtrude = d * 0.34;
+  const frontZ = -d / 2;
+  const backZ = d / 2 - 0.04;
 
-  // Sockel
-  g.add(box(w * 0.97, baseH, d * 0.9, bodyDark, 0, 0, d * 0.02));
-
-  // Hauptkorpus (ragt nicht bis ganz nach vorne – Klaviatur steht davor)
-  g.add(box(w * 0.94, bodyH * 0.88, cabinetD, body, 0, baseH, d / 2 - cabinetD / 2));
-
-  // Seitenwangen
-  g.add(box(cheekW, bodyH * 0.68, cabinetD * 0.88, bodyDark, -w / 2 + cheekW / 2 + 0.01, baseH + 0.02, d / 2 - cabinetD / 2));
-  g.add(box(cheekW, bodyH * 0.68, cabinetD * 0.88, bodyDark, w / 2 - cheekW / 2 - 0.01, baseH + 0.02, d / 2 - cabinetD / 2));
-
-  // Oberteil / Deckel
-  g.add(box(w * 0.9, bodyH * 0.09, cabinetD * 0.92, body, 0, baseH + bodyH * 0.9, d / 2 - cabinetD / 2 + 0.01));
-  const lid = box(w * 0.86, bodyH * 0.05, cabinetD * 0.75, body, 0, h * 0.97, d / 2 - cabinetD * 0.35);
-  lid.rotation.x = 0.1;
-  g.add(lid);
-
-  // Klaviatur-Brett (ragt nach vorne, -Z)
-  const kbY = baseH + bodyH * 0.46;
-  const kbZ = -d / 2 + keyProtrude * 0.55;
-  g.add(box(w * 0.86, 0.035, keyProtrude, bodyDark, 0, kbY, kbZ));
-
-  // Tastenfeld
-  const keyW = w * 0.8;
-  const keyD = keyProtrude * 0.82;
-  g.add(box(keyW, 0.02, keyD, ivory, 0, kbY + 0.028, kbZ - keyProtrude * 0.06));
-
-  // Schwarze Tasten (vereinfacht, aber sichtbar)
-  const blackCount = 14;
-  const bw = keyW / (blackCount + 2);
-  for (let i = 0; i < blackCount; i++) {
-    if (i % 3 === 2) continue;
-    g.add(box(bw * 0.55, 0.028, keyD * 0.52, ebony, -keyW / 2 + bw * (i + 1.5), kbY + 0.04, kbZ - keyProtrude * 0.18));
+  // --- Sockel & Beine ---
+  g.add(box(w * 0.96, baseH, d * 0.92, blackDeep, 0, 0, 0));
+  for (const [lx, lz] of [
+    [-w * 0.38, -d * 0.34],
+    [w * 0.38, -d * 0.34],
+    [-w * 0.38, d * 0.3],
+    [w * 0.38, d * 0.3],
+  ]) {
+    g.add(box(0.055, baseH, 0.055, blackDeep, lx, 0, lz));
   }
 
-  // Klappdeckel über Tasten
-  const fall = box(w * 0.82, 0.018, keyProtrude * 0.7, body, 0, kbY + bodyH * 0.14, kbZ - keyProtrude * 0.1);
-  fall.rotation.x = -0.32;
+  // --- Hauptkorpus (hinten, hoch) ---
+  const cabinetD = d * 0.58;
+  const cabinetZ = backZ - cabinetD / 2;
+  g.add(box(w * 0.93, bodyH * 0.92, cabinetD, black, 0, baseH, cabinetZ));
+
+  // Seitenwangen (breiter als Korpus an Klaviaturhöhe)
+  const cheekH = bodyH * 0.55;
+  const cheekD = d * 0.48;
+  const cheekZ = frontZ + cheekD / 2 + 0.02;
+  g.add(box(w * 0.11, cheekH, cheekD, blackDeep, -w / 2 + w * 0.055, baseH + cheekH * 0.42, cheekZ));
+  g.add(box(w * 0.11, cheekH, cheekD, blackDeep, w / 2 - w * 0.055, baseH + cheekH * 0.42, cheekZ));
+
+  // Obere Blende
+  g.add(box(w * 0.9, bodyH * 0.08, cabinetD * 0.95, black, 0, baseH + bodyH * 0.9, cabinetZ));
+  const top = box(w * 0.86, bodyH * 0.05, cabinetD * 0.7, black, 0, h * 0.97, cabinetZ - cabinetD * 0.12);
+  top.rotation.x = 0.08;
+  g.add(top);
+
+  // --- Klaviatur (Mitte, ragt nach vorne) ---
+  const kbY = baseH + bodyH * 0.42;
+  const keyD = d * 0.38;
+  const keyZ = frontZ + keyD / 2 + 0.01;
+
+  // Vorderwand mit Ausschnitt für Tasten
+  g.add(box(w * 0.9, bodyH * 0.38, 0.04, black, 0, baseH + bodyH * 0.58, frontZ + 0.025));
+
+  // Tastenbrett
+  g.add(box(w * 0.84, 0.04, keyD, blackDeep, 0, kbY, keyZ));
+
+  // Weiße Tasten (einheitliche Fläche)
+  g.add(box(w * 0.78, 0.022, keyD * 0.88, ivory, 0, kbY + 0.03, keyZ - keyD * 0.04));
+
+  // Schwarze Tasten
+  const blacks = 13;
+  const bw = (w * 0.78) / (blacks + 1);
+  for (let i = 0; i < blacks; i++) {
+    if (i % 3 === 2) continue;
+    g.add(box(bw * 0.52, 0.032, keyD * 0.5, ebony, -w * 0.39 + bw * (i + 1.2), kbY + 0.042, keyZ - keyD * 0.2));
+  }
+
+  // Klappdeckel (offen angewinkelt)
+  const fall = box(w * 0.8, 0.02, keyD * 0.75, black, 0, kbY + bodyH * 0.2, keyZ - keyD * 0.05);
+  fall.rotation.x = -0.42;
   g.add(fall);
 
-  // Notenpult
-  g.add(box(w * 0.5, 0.012, d * 0.16, bodyDark, 0, baseH + bodyH * 0.72, -d / 2 + d * 0.12));
-  g.add(box(w * 0.46, bodyH * 0.14, 0.022, body, 0, baseH + bodyH * 0.64, -d / 2 + 0.014));
-
   // Griffleiste
-  g.add(box(w * 0.74, 0.016, 0.025, brass, 0, baseH + bodyH * 0.34, -d / 2 + 0.012));
+  g.add(box(w * 0.7, 0.02, 0.03, brass, 0, baseH + bodyH * 0.3, frontZ + 0.015));
 
-  // Pedalkonsole
-  g.add(box(w * 0.42, 0.018, d * 0.14, brass, 0, baseH * 0.65, -d / 2 + d * 0.1));
+  // --- Notenpult ---
+  g.add(box(w * 0.48, 0.012, d * 0.14, blackDeep, 0, baseH + bodyH * 0.7, frontZ + d * 0.1));
+  const rack = box(w * 0.44, bodyH * 0.15, 0.02, black, 0, baseH + bodyH * 0.62, frontZ + 0.012);
+  rack.rotation.x = -0.15;
+  g.add(rack);
+
+  // --- Pedale ---
+  g.add(box(w * 0.38, 0.02, d * 0.12, brass, 0, baseH * 0.7, frontZ + d * 0.08));
   for (const px of [-0.1, 0, 0.1]) {
-    g.add(cylinder(0.032, 0.012, chrome, px, baseH * 0.52, -d / 2 + d * 0.12));
-    g.add(cylinder(0.01, 0.06, brass, px, baseH * 0.42, -d / 2 + d * 0.1));
+    g.add(box(0.055, 0.014, 0.07, brass, px, baseH * 0.55, frontZ + d * 0.1));
   }
 }

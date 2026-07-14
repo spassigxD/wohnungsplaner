@@ -3,12 +3,21 @@ import { fabricTexture } from './textures';
 import { cornerSofaLayout, cornerSofaSide } from './cornerSofa';
 import type { FurnitureItem } from './model';
 
-function mat(color: string | number, opts: Partial<THREE.MeshStandardMaterialParameters> = {}): THREE.MeshStandardMaterial {
-  return new THREE.MeshStandardMaterial({ color, roughness: 0.88, metalness: 0, ...opts });
+function fabric(color: string, lighter = false): THREE.MeshStandardMaterial {
+  const c = lighter ? lighten(color, 1.12) : color;
+  return new THREE.MeshStandardMaterial({ map: fabricTexture(c), roughness: 0.94, metalness: 0 });
 }
 
-function fabric(color: string): THREE.MeshStandardMaterial {
-  return new THREE.MeshStandardMaterial({ map: fabricTexture(color), roughness: 0.96, metalness: 0 });
+function legMat(): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({ color: '#2a2a2e', metalness: 0.55, roughness: 0.35 });
+}
+
+function lighten(hex: string, f: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const c = (v: number) => Math.min(255, Math.round(v * f));
+  return `rgb(${c(r)},${c(g)},${c(b)})`;
 }
 
 function box(w: number, h: number, d: number, material: THREE.Material, x = 0, y = 0, z = 0): THREE.Mesh {
@@ -19,17 +28,39 @@ function box(w: number, h: number, d: number, material: THREE.Material, x = 0, y
   return m;
 }
 
-function roundBox(w: number, h: number, d: number, material: THREE.Material, x: number, y: number, z: number, tiltX = 0): THREE.Mesh {
-  const m = box(w, h, d, material, x, y, z);
-  m.rotation.x = tiltX;
-  return m;
+function leg(g: THREE.Group, x: number, z: number): void {
+  g.add(box(0.04, 0.14, 0.04, legMat(), x, 0, z));
 }
 
-function foot(g: THREE.Group, material: THREE.Material, x: number, z: number): void {
-  g.add(box(0.05, 0.04, 0.05, material, x, 0, z));
+function addSeatCushion(g: THREE.Group, cx: number, cz: number, mw: number, md: number, y: number, mat: THREE.Material, gap = 0.025): void {
+  g.add(box(mw - gap, 0.11, md - gap, mat, cx, y, cz));
 }
 
-/** Gepolstertes Ecksofa mit Kissen, Rahmen und Armlehnen – kein Klotz-Look. */
+function addBackCushionMain(g: THREE.Group, cx: number, cz: number, bw: number, y: number, mat: THREE.Material, backZ: number): void {
+  const backH = 0.38;
+  const backD = 0.14;
+  const m = box(bw - 0.02, backH, backD, mat, cx, y + 0.02, backZ + backD * 0.3);
+  m.rotation.x = 0.1;
+  g.add(m);
+}
+
+function addBackCushionChaise(
+  g: THREE.Group,
+  cz: number,
+  moduleD: number,
+  y: number,
+  mat: THREE.Material,
+  backX: number,
+  side: 'left' | 'right'
+): void {
+  const backH = 0.38;
+  const backD = 0.14;
+  const m = box(backD, backH, moduleD - 0.02, mat, backX, y + 0.02, cz);
+  m.rotation.z = side === 'right' ? -0.08 : 0.08;
+  g.add(m);
+}
+
+/** Modulares Ecksofa nach Referenz: Hauptteil an Rückwand, Chaise nach vorne, einzelne Kissen. */
 export function buildCornerSofa3D(g: THREE.Group, item: FurnitureItem): void {
   const w = item.width / 100;
   const d = item.depth / 100;
@@ -45,63 +76,64 @@ export function buildCornerSofa3D(g: THREE.Group, item: FurnitureItem): void {
   const chaiseZ = layout.chaise.cy / 100;
   const mainZ = layout.main.cy / 100;
 
-  const frame = mat('#3a4248', { roughness: 0.9 });
   const body = fabric(item.color);
-  const cushion = fabric(item.color);
-  const pillow = fabric('#8a939c');
+  const cushion = fabric(item.color, true);
+  const backMat = fabric(item.color);
+  const pillow = fabric('#9aa3ad');
 
-  const skirtH = 0.055;
-  const cushionH = 0.13;
-  const seatTop = skirtH + cushionH;
-  const backH = Math.min(0.42, h * 0.52);
-  const backD = Math.min(0.17, seatD * 0.2);
-  const armW = Math.min(0.15, seatD * 0.62);
-  const armH = Math.min(0.58, h * 0.72);
+  const legH = 0.14;
+  const seatY = legH;
+  const armW = 0.14;
+  const armH = Math.min(0.52, h * 0.65);
 
-  const mainBackZ = -hd + seatD - backD * 0.45;
-  const mainBackW = w - seatD;
-  const mainBackX = side === 'right' ? -seatD / 2 : seatD / 2;
-  const chaiseBackX = side === 'right' ? hw - backD * 0.45 : -hw + backD * 0.45;
+  const mainBackZ = hd - seatD * 0.55;
+  const chaiseBackX = side === 'right' ? hw - seatD * 0.55 : -hw + seatD * 0.55;
 
-  // --- Untergestell / Sockel ---
-  g.add(box(w - 0.02, skirtH, seatD - 0.02, frame, 0, 0, mainZ));
-  g.add(box(seatD - 0.02, skirtH, chaiseLen - 0.02, frame, chaiseX, 0, chaiseZ));
+  // Beine
+  const inset = 0.08;
+  leg(g, -hw + inset, mainZ - seatD / 2 + inset);
+  leg(g, hw - seatD + inset, mainZ - seatD / 2 + inset);
+  leg(g, chaiseX, -hd + inset);
+  leg(g, chaiseX, hd - seatD + inset);
 
-  // Füße
-  const footInset = 0.07;
-  foot(g, frame, -hw + footInset, mainZ - seatD / 2 + footInset);
-  foot(g, frame, hw - footInset, mainZ - seatD / 2 + footInset);
-  foot(g, frame, chaiseX, hd - footInset);
-  foot(g, frame, chaiseX, -hd + seatD + footInset);
+  // Untergestell
+  g.add(box(w - seatD + 0.02, 0.05, seatD - 0.02, body, -seatD / 2, legH - 0.05, mainZ));
+  g.add(box(seatD - 0.02, 0.05, chaiseLen - 0.02, body, chaiseX, legH - 0.05, chaiseZ));
 
-  // --- Sitzkissen (dick, weich) ---
-  g.add(box(w - 0.08, cushionH, seatD - 0.1, cushion, 0, skirtH, mainZ + 0.02));
-  g.add(box(seatD - 0.08, cushionH, chaiseLen - 0.08, cushion, chaiseX, skirtH, chaiseZ));
+  // Hauptteil: 3 Sitzkissen
+  const mainModules = 3;
+  const modW = (w - seatD) / mainModules;
+  for (let i = 0; i < mainModules; i++) {
+    const cx = -hw + seatD / 2 + modW * (i + 0.5);
+    addSeatCushion(g, cx, mainZ, modW, seatD, seatY, cushion);
+    addBackCushionMain(g, cx, mainZ, modW, seatY, backMat, mainBackZ);
+  }
 
-  // Eckkissen (Übergang Hauptteil ↔ Chaise)
-  const cornerX = side === 'right' ? hw - seatD / 2 : -hw + seatD / 2;
-  const cornerZ = -hd + seatD / 2;
-  g.add(box(seatD - 0.1, cushionH * 0.95, seatD - 0.1, cushion, cornerX, skirtH, cornerZ));
+  // Eckmodul
+  const cornerX = chaiseX;
+  const cornerZ = hd - seatD - seatD / 2;
+  addSeatCushion(g, cornerX, cornerZ, seatD, seatD, seatY, cushion, 0.02);
+  addBackCushionMain(g, cornerX, cornerZ, seatD, seatY, backMat, mainBackZ);
 
-  // --- Rückenkissen (auf Sitz, leicht geneigt – keine Wand) ---
-  const backY = seatTop;
-  g.add(roundBox(mainBackW - 0.06, backH, backD, body, mainBackX, backY, mainBackZ, -0.1));
-  g.add(roundBox(backD, backH, chaiseLen - 0.1, body, chaiseBackX, backY, chaiseZ, -0.06));
+  // Chaise: 2 Module
+  const chaiseModules = 2;
+  const modD = chaiseLen / chaiseModules;
+  for (let i = 0; i < chaiseModules; i++) {
+    const cz = -hd + modD * (i + 0.5);
+    addSeatCushion(g, chaiseX, cz, seatD, modD, seatY, cushion);
+    addBackCushionChaise(g, cz, modD, seatY, backMat, chaiseBackX, side);
+  }
 
-  // Kopfkissen andeuten
-  const pillowW = Math.min(0.42, mainBackW / 3.2);
-  const pillowH = 0.22;
-  const pillowD = 0.1;
-  const pillowY = seatTop + backH * 0.55;
-  g.add(box(pillowW, pillowH, pillowD, pillow, mainBackX - mainBackW * 0.22, pillowY, mainBackZ - 0.02));
-  g.add(box(pillowW, pillowH, pillowD, pillow, mainBackX + mainBackW * 0.22, pillowY, mainBackZ - 0.02));
-
-  // --- Armlehnen (gepolstert, niedriger als Rücken) ---
+  // Armlehne links
   const outerArmX = side === 'right' ? -hw + armW / 2 : hw - armW / 2;
-  g.add(box(armW, armH, seatD - 0.04, body, outerArmX, skirtH, mainZ));
-  g.add(box(armW - 0.02, armH * 0.92, armW, body, chaiseX, skirtH, hd - armW / 2));
+  g.add(box(armW, armH, seatD - 0.03, body, outerArmX, legH, mainZ));
+  g.add(box(armW + 0.02, 0.06, seatD - 0.06, cushion, outerArmX, legH + armH, mainZ));
 
-  // Armlehnen-Auflage oben (abgerundeter Eindruck)
-  g.add(box(armW + 0.02, 0.05, seatD - 0.08, cushion, outerArmX, skirtH + armH, mainZ));
-  g.add(box(armW, 0.05, armW + 0.02, cushion, chaiseX, skirtH + armH, hd - armW / 2));
+  // Armlehne vorne (Chaise-Ende)
+  g.add(box(armW - 0.01, armH * 0.9, armW, body, chaiseX, legH, -hd + armW / 2));
+  g.add(box(armW, 0.05, armW + 0.02, cushion, chaiseX, legH + armH * 0.9, -hd + armW / 2));
+
+  // Dekokissen
+  g.add(box(0.38, 0.2, 0.1, pillow, -hw * 0.35, seatY + 0.42, mainBackZ - 0.04));
+  g.add(box(0.32, 0.18, 0.09, pillow, chaiseX, seatY + 0.4, -hd + chaiseLen * 0.35));
 }

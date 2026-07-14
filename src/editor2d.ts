@@ -685,24 +685,23 @@ export class Editor2D {
     ctx.lineWidth = (selected ? 2.5 : 1.4) / this.zoom;
     ctx.stroke();
 
-    // Rückenlehnen (dicke Linien an Außenkanten)
+    // Rückenlehnen (L-förmig an Außenkanten)
     const backW = Math.max(4, layout.seatDepth * 0.12) / this.zoom;
     ctx.strokeStyle = 'rgba(0,0,0,0.3)';
     ctx.lineWidth = backW;
     ctx.lineCap = 'square';
     ctx.beginPath();
+    const backY = f.depth / 2 - layout.seatDepth;
     if (layout.side === 'right') {
-      const by = -f.depth / 2 + layout.seatDepth;
-      ctx.moveTo(-f.width / 2, by);
-      ctx.lineTo(f.width / 2 - layout.seatDepth, by);
-      ctx.moveTo(f.width / 2, by);
-      ctx.lineTo(f.width / 2, f.depth / 2);
+      ctx.moveTo(-f.width / 2, backY);
+      ctx.lineTo(f.width / 2 - layout.seatDepth, backY);
+      ctx.moveTo(f.width / 2, backY);
+      ctx.lineTo(f.width / 2, -f.depth / 2);
     } else {
-      const by = -f.depth / 2 + layout.seatDepth;
-      ctx.moveTo(-f.width / 2, by);
-      ctx.lineTo(f.width / 2, by);
-      ctx.moveTo(-f.width / 2, by);
-      ctx.lineTo(-f.width / 2, f.depth / 2);
+      ctx.moveTo(-f.width / 2, backY);
+      ctx.lineTo(f.width / 2, backY);
+      ctx.moveTo(-f.width / 2, backY);
+      ctx.lineTo(-f.width / 2, -f.depth / 2);
     }
     ctx.stroke();
     ctx.lineWidth = 1 / this.zoom;
@@ -714,11 +713,11 @@ export class Editor2D {
       layout.side === 'right'
         ? f.width / 2 - layout.seatDepth
         : -f.width / 2 + layout.seatDepth;
-    ctx.moveTo(splitX, -f.depth / 2 + layout.seatDepth);
-    ctx.lineTo(splitX, f.depth / 2);
+    ctx.moveTo(splitX, backY);
+    ctx.lineTo(splitX, -f.depth / 2);
     ctx.stroke();
 
-    // Vorderseite (oben = -Y)
+    // Vorderseite (unten = -Y)
     const frontY = -f.depth / 2;
     ctx.strokeStyle = 'rgba(0,0,0,0.4)';
     ctx.lineWidth = 1.2 / this.zoom;
@@ -793,8 +792,9 @@ export class Editor2D {
     ctx.fillRect(-hw, -hd + f.depth * 0.08, cheekW, f.depth * 0.55);
     ctx.fillRect(hw - cheekW, -hd + f.depth * 0.08, cheekW, f.depth * 0.55);
 
-    // Klaviatur an der Vorderseite (-Y)
-    const kbD = f.depth * 0.4;
+    // Klaviatur an der Vorderseite (unten = -Y, Rückwand oben)
+    const kbD = f.depth * 0.38;
+    const backY = f.depth / 2;
     ctx.fillStyle = 'rgba(242,236,224,0.96)';
     ctx.fillRect(-hw * 0.88, -hd, f.width * 0.88, kbD);
     ctx.strokeStyle = 'rgba(0,0,0,0.3)';
@@ -820,9 +820,9 @@ export class Editor2D {
       }
     }
 
-    // Notenpult / Oberteil
+    // Notenpult / Oberteil (hinten)
     ctx.fillStyle = 'rgba(0,0,0,0.18)';
-    ctx.fillRect(-hw * 0.35, hd - f.depth * 0.22, f.width * 0.7, f.depth * 0.18);
+    ctx.fillRect(-hw * 0.35, backY - f.depth * 0.22, f.width * 0.7, f.depth * 0.18);
 
     // Pedale
     ctx.fillStyle = 'rgba(184,148,42,0.85)';

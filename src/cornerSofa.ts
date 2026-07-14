@@ -13,37 +13,44 @@ export interface CornerSofaLayout {
   outline: { x: number; y: number }[];
 }
 
+/**
+ * L-Sofa wie in Referenzbildern: Hauptteil an der Rückwand (oben/+Y),
+ * Chaiselongue seitlich nach vorne (-Y). Vorderseite = -Y.
+ */
 export function cornerSofaLayout(width: number, depth: number, side: 'left' | 'right' = 'right'): CornerSofaLayout {
-  const seatDepth = Math.min(100, Math.max(85, Math.round(width * 0.36)));
+  const seatDepth = Math.min(72, Math.max(58, Math.round(depth * 0.32)));
   const hw = width / 2;
   const hd = depth / 2;
   const chaiseLen = depth - seatDepth;
-  const chaiseCx = side === 'right' ? hw - seatDepth / 2 : -hw + seatDepth / 2;
+  const backY = hd - seatDepth / 2;
+  const chaiseCy = -hd + chaiseLen / 2;
 
   const outline =
     side === 'right'
       ? [
-          { x: -hw, y: -hd },
-          { x: hw, y: -hd },
-          { x: hw, y: -hd + seatDepth },
-          { x: hw - seatDepth, y: -hd + seatDepth },
-          { x: hw - seatDepth, y: hd },
           { x: -hw, y: hd },
+          { x: hw, y: hd },
+          { x: hw, y: -hd },
+          { x: hw - seatDepth, y: -hd },
+          { x: hw - seatDepth, y: hd - seatDepth },
+          { x: -hw, y: hd - seatDepth },
         ]
       : [
-          { x: -hw, y: -hd },
-          { x: hw, y: -hd },
+          { x: -hw, y: hd },
           { x: hw, y: hd },
-          { x: -hw + seatDepth, y: hd },
-          { x: -hw + seatDepth, y: -hd + seatDepth },
-          { x: -hw, y: -hd + seatDepth },
+          { x: hw, y: hd - seatDepth },
+          { x: -hw + seatDepth, y: hd - seatDepth },
+          { x: -hw + seatDepth, y: -hd },
+          { x: -hw, y: -hd },
         ];
+
+  const chaiseCx = side === 'right' ? hw - seatDepth / 2 : -hw + seatDepth / 2;
 
   return {
     seatDepth,
     side,
-    main: { cx: 0, cy: -hd + seatDepth / 2, w: width, h: seatDepth },
-    chaise: { cx: chaiseCx, cy: -hd + seatDepth + chaiseLen / 2, w: seatDepth, h: chaiseLen },
+    main: { cx: 0, cy: backY, w: width, h: seatDepth },
+    chaise: { cx: chaiseCx, cy: chaiseCy, w: seatDepth, h: chaiseLen },
     outline,
   };
 }
