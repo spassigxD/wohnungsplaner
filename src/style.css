@@ -319,11 +319,27 @@ button.danger {
   background: #5a2a2a;
   border-color: #7a3a3a;
   width: 100%;
-  margin-top: 6px;
 }
 
 button.danger:hover {
   background: #6e3434;
+}
+
+.prop-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+button.duplicate {
+  background: #2a3f5a;
+  border-color: #3a5578;
+  width: 100%;
+}
+
+button.duplicate:hover {
+  background: #345070;
 }
 
 /* ---------- Statusleiste ---------- */

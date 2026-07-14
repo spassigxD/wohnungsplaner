@@ -124,6 +124,34 @@ export class Store {
     this.emit();
   }
 
+  duplicateSelected(): void {
+    if (!this.selection) return;
+    const offset = this.snap || 50;
+
+    if (this.selection.kind === 'wall') {
+      const w = this.getWall(this.selection.id);
+      if (!w) return;
+      this.addWall({
+        ...w,
+        id: uid(),
+        x1: w.x1 + offset,
+        y1: w.y1 + offset,
+        x2: w.x2 + offset,
+        y2: w.y2 + offset,
+      });
+      return;
+    }
+
+    const f = this.getFurniture(this.selection.id);
+    if (!f) return;
+    this.addFurniture({
+      ...f,
+      id: uid(),
+      x: f.x + offset,
+      y: f.y + offset,
+    });
+  }
+
   reset(): void {
     this.apartment = defaultApartment();
     this.selection = null;

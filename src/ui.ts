@@ -179,6 +179,14 @@ function textRow(label: string, value: string, onCommit: (v: string) => void, fi
   return row;
 }
 
+function actionRow(label: string, className: string, onClick: () => void): HTMLElement {
+  const btn = document.createElement('button');
+  btn.className = className;
+  btn.textContent = label;
+  btn.addEventListener('click', onClick);
+  return btn;
+}
+
 function renderFurnitureProps(body: HTMLElement, store: Store, f: FurnitureItem): void {
   const commit = () => store.emit();
 
@@ -214,11 +222,11 @@ function renderFurnitureProps(body: HTMLElement, store: Store, f: FurnitureItem)
   look.appendChild(colorRow('Farbe', f.color, (v) => ((f.color = v), commit()), 'color'));
   body.appendChild(look);
 
-  const del = document.createElement('button');
-  del.className = 'danger';
-  del.textContent = 'Löschen (Entf)';
-  del.addEventListener('click', () => store.removeSelected());
-  body.appendChild(del);
+  const actions = document.createElement('div');
+  actions.className = 'prop-actions';
+  actions.appendChild(actionRow('Duplizieren (Strg+D)', 'duplicate', () => store.duplicateSelected()));
+  actions.appendChild(actionRow('Löschen (Entf)', 'danger', () => store.removeSelected()));
+  body.appendChild(actions);
 }
 
 function renderWallProps(body: HTMLElement, store: Store, w: Wall): void {
@@ -260,11 +268,11 @@ function renderWallProps(body: HTMLElement, store: Store, w: Wall): void {
   look.appendChild(colorRow('Wandfarbe', w.color, (v) => ((w.color = v), commit()), 'color'));
   body.appendChild(look);
 
-  const del = document.createElement('button');
-  del.className = 'danger';
-  del.textContent = 'Wand löschen (Entf)';
-  del.addEventListener('click', () => store.removeSelected());
-  body.appendChild(del);
+  const actions = document.createElement('div');
+  actions.className = 'prop-actions';
+  actions.appendChild(actionRow('Duplizieren (Strg+D)', 'duplicate', () => store.duplicateSelected()));
+  actions.appendChild(actionRow('Wand löschen (Entf)', 'danger', () => store.removeSelected()));
+  body.appendChild(actions);
 }
 
 function renderApartmentProps(body: HTMLElement, store: Store): void {
@@ -276,6 +284,7 @@ function renderApartmentProps(body: HTMLElement, store: Store): void {
   hint.innerHTML =
     'Nichts ausgewählt.<br /><br />' +
     'Klicke auf eine <b>Wand</b> oder ein <b>Möbelstück</b>, um es zu bearbeiten – alle Maße sind zentimetergenau einstellbar.<br /><br />' +
+    'Mit <b>Strg+D</b> duplizierst du die Auswahl (versetzt um das aktuelle Raster).<br /><br />' +
     'Tipp: Lasse beim Wändezeichnen Lücken für Türen (üblich: 80–90 cm).';
   body.appendChild(hint);
 

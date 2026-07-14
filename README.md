@@ -10,6 +10,7 @@ in einer **First-Person-Ansicht** begehen.
   - Wände zeichnen per Klicken & Ziehen, mit Raster-Einrasten (1 / 5 / 10 / 25 cm)
   - Jede Wand einzeln anpassbar: Länge, Dicke, Höhe, Farbe – zentimetergenau über das Eigenschaften-Panel
   - Wände verschieben und Endpunkte per Griff nachträglich ziehen
+  - Wände und Möbel per Klick oder **Strg+D** duplizieren (versetzt um das Raster)
   - Möbel per Klick aus dem Katalog platzieren, verschieben, drehen (Taste `R`)
   - Alle Möbelmaße (Breite × Tiefe × Höhe) und Farben frei einstellbar
   - Maßstabsleiste, Live-Cursor-Position in Metern und dynamische Maßstabsanzeige
@@ -43,6 +44,7 @@ npm run dev
 | --- | --- |
 | Wand zeichnen | Werkzeug „Wand zeichnen“, dann klicken & ziehen (`Shift` = freier Winkel) |
 | Auswählen / verschieben | Werkzeug „Auswählen“, Element anklicken und ziehen |
+| Duplizieren | `Strg+D` / `Cmd+D` oder Button im Eigenschaften-Panel |
 | Möbel drehen | `R` (+15°), `Shift+R` (−15°) oder Gradzahl im Panel |
 | Löschen | `Entf` / `Backspace` |
 | Ansicht verschieben | Rechte Maustaste ziehen oder `Leertaste` + ziehen |

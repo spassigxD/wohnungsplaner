@@ -342,6 +342,11 @@ export class Editor2D {
       this.store.removeSelected();
       return;
     }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
+      e.preventDefault();
+      this.store.duplicateSelected();
+      return;
+    }
     if (e.key === 'Escape') {
       if (this.drag.kind === 'draw-wall') this.drag = { kind: 'none' };
       this.store.select(null);
