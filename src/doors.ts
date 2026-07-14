@@ -80,6 +80,13 @@ export function placeDoorOnWall(
   snapDoorToWall(door, wall, snap);
 }
 
+export function findWallForDoor(door: FurnitureItem, walls: Wall[]): Wall | undefined {
+  for (const wall of walls) {
+    if (doorOpeningOnWall(door, wall)) return wall;
+  }
+  return undefined;
+}
+
 export function doorOpeningOnWall(
   door: FurnitureItem,
   wall: Wall,

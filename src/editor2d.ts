@@ -648,26 +648,41 @@ export class Editor2D {
     ctx.translate(f.x, f.y);
     ctx.rotate((f.rotation * Math.PI) / 180);
 
-    const drawPart = (part: { cx: number; cy: number; w: number; h: number }, front = false) => {
-      ctx.fillStyle = withAlpha(f.color, 0.85);
-      ctx.fillRect(part.cx - part.w / 2, part.cy - part.h / 2, part.w, part.h);
-      ctx.strokeStyle = selected ? '#50a0ff' : 'rgba(0,0,0,0.55)';
-      ctx.lineWidth = (selected ? 2.5 : 1.2) / this.zoom;
-      ctx.strokeRect(part.cx - part.w / 2, part.cy - part.h / 2, part.w, part.h);
-      if (front) {
-        const top = part.cy - part.h / 2;
-        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-        ctx.lineWidth = 1.2 / this.zoom;
-        ctx.beginPath();
-        ctx.moveTo(part.cx - part.w * 0.15, top);
-        ctx.lineTo(part.cx, top - Math.min(8, part.h * 0.35));
-        ctx.lineTo(part.cx + part.w * 0.15, top);
-        ctx.stroke();
-      }
-    };
+    ctx.beginPath();
+    for (let i = 0; i < layout.outline.length; i++) {
+      const p = layout.outline[i];
+      if (i === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x, p.y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = withAlpha(f.color, 0.88);
+    ctx.fill();
+    ctx.strokeStyle = selected ? '#50a0ff' : 'rgba(0,0,0,0.55)';
+    ctx.lineWidth = (selected ? 2.5 : 1.4) / this.zoom;
+    ctx.stroke();
 
-    drawPart(layout.main, true);
-    drawPart(layout.chaise);
+    // Innenkante zwischen Hauptteil und Chaiselongue
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx.lineWidth = 1 / this.zoom;
+    ctx.beginPath();
+    if (layout.side === 'right') {
+      ctx.moveTo(layout.main.w / 2 - layout.seatDepth, -f.depth / 2 + layout.seatDepth);
+      ctx.lineTo(layout.main.w / 2 - layout.seatDepth, f.depth / 2);
+    } else {
+      ctx.moveTo(-layout.main.w / 2 + layout.seatDepth, -f.depth / 2 + layout.seatDepth);
+      ctx.lineTo(-layout.main.w / 2 + layout.seatDepth, f.depth / 2);
+    }
+    ctx.stroke();
+
+    // Vorderseite (oben = -Y)
+    const frontY = -f.depth / 2;
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+    ctx.lineWidth = 1.2 / this.zoom;
+    ctx.beginPath();
+    ctx.moveTo(-f.width * 0.12, frontY);
+    ctx.lineTo(0, frontY - Math.min(10, layout.seatDepth * 0.35));
+    ctx.lineTo(f.width * 0.12, frontY);
+    ctx.stroke();
 
     ctx.restore();
 
@@ -719,20 +734,23 @@ export class Editor2D {
     ctx.rotate((f.rotation * Math.PI) / 180);
 
     const hw = f.width / 2;
-    const hd = Math.max(f.depth, 12) / 2;
+    const gap = 3 / this.zoom;
 
-    ctx.fillStyle = withAlpha(f.color, 0.9);
-    ctx.fillRect(-hw, -hd, f.width, f.depth);
-    ctx.strokeStyle = selected ? '#50a0ff' : 'rgba(0,0,0,0.65)';
-    ctx.lineWidth = (selected ? 2.5 : 1.4) / this.zoom;
-    ctx.strokeRect(-hw, -hd, f.width, f.depth);
+    // Öffnung (transparent) – nur Rahmen und Türblatt
+    ctx.strokeStyle = selected ? '#50a0ff' : 'rgba(0,0,0,0.55)';
+    ctx.lineWidth = (selected ? 2.2 : 1.2) / this.zoom;
+    ctx.strokeRect(-hw, -gap, f.width, gap * 2);
 
-    // Türblatt
-    ctx.fillStyle = withAlpha('#f2eadc', 0.95);
-    ctx.fillRect(-hw + 2 / this.zoom, -hd + 1 / this.zoom, f.width - 4 / this.zoom, hd);
+    // Türblatt in der Wandebene
+    ctx.fillStyle = withAlpha('#e8dcc8', 0.95);
+    ctx.fillRect(-hw + gap, -gap * 0.6, f.width - gap * 2, gap * 1.2);
     ctx.strokeStyle = 'rgba(0,0,0,0.35)';
     ctx.lineWidth = 1 / this.zoom;
-    ctx.strokeRect(-hw + 2 / this.zoom, -hd + 1 / this.zoom, f.width - 4 / this.zoom, hd);
+    ctx.strokeRect(-hw + gap, -gap * 0.6, f.width - gap * 2, gap * 1.2);
+
+    // Griff
+    ctx.fillStyle = '#b8bec4';
+    ctx.fillRect(hw * 0.55, -gap * 0.25, 4 / this.zoom, gap * 0.5);
 
     // Öffnungsbogen
     const hingeX = -hw;
@@ -740,7 +758,7 @@ export class Editor2D {
     ctx.lineWidth = 1.2 / this.zoom;
     ctx.setLineDash([4 / this.zoom, 3 / this.zoom]);
     ctx.beginPath();
-    ctx.arc(hingeX, hd, f.width, -Math.PI / 2, 0);
+    ctx.arc(hingeX, gap, f.width * 0.85, -Math.PI / 2, 0);
     ctx.stroke();
     ctx.setLineDash([]);
 
@@ -762,7 +780,7 @@ export class Editor2D {
       ctx.font = `${fontPx}px system-ui, sans-serif`;
       ctx.fillStyle = '#50a0ff';
       ctx.textAlign = 'center';
-      ctx.fillText(`${formatCm(f.width)} · ${Math.round(f.rotation)}°`, f.x, f.y + hd + 14 / this.zoom);
+      ctx.fillText(`${formatCm(f.width)} · ${Math.round(f.rotation)}°`, f.x, f.y + 14 / this.zoom);
       ctx.textAlign = 'start';
     }
   }

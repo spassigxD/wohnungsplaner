@@ -52,7 +52,7 @@ npm run dev
 | Löschen | `Entf` / `Backspace` |
 | Ansicht verschieben | Rechte Maustaste ziehen oder `Leertaste` + ziehen |
 | Zoomen | `Strg`/`Cmd` + Scrollen (oder Pinch), Buttons `+`/`−` |
-| 3D begehen | Button „3D begehen“, dann klicken → `WASD` + Maus, `Esc` gibt die Maus frei |
+| 3D begehen | Button „3D begehen“, dann klicken → `WASD` + Maus, `E` = Tür öffnen, `Esc` gibt die Maus frei |
 
 **Tipp Türen:** Türen aus dem Katalog an eine Wand ziehen – sie richten sich automatisch aus
 und schneiden die Öffnung frei (üblich: 80 cm Zimmertür, 90 cm Wohnungstür).

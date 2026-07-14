@@ -166,7 +166,28 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
       }
       break;
     }
-    case 'wardrobe':
+    case 'wardrobe': {
+      const body = wood(c);
+      const light = mat('#ddd4c6', { roughness: 0.62 });
+      const plinthH = 0.08;
+      const corniceH = 0.06;
+      const doorCount = 3;
+      const gap = 0.008;
+      const doorW = (w - gap * (doorCount - 1)) / doorCount;
+
+      g.add(box(w, plinthH, d + 0.02, mat('#4a4038'), 0, 0));
+      g.add(box(w, h - plinthH - corniceH, d, body, 0, plinthH));
+      g.add(box(w + 0.05, corniceH, d + 0.03, body, 0, h - corniceH));
+
+      for (let i = 0; i < doorCount; i++) {
+        const x = -w / 2 + doorW * (i + 0.5) + gap * i;
+        g.add(box(doorW, h - plinthH - corniceH - 0.04, 0.025, light, x, plinthH + 0.02, -d / 2 + 0.015));
+        g.add(box(0.09, 0.014, 0.025, chrome(), x + doorW * 0.28, h * 0.52, -d / 2 - 0.02));
+      }
+      g.add(box(0.02, h - plinthH - corniceH - 0.06, d * 0.92, mat('#4a4038'), 0, plinthH, 0));
+      g.add(box(w * 0.92, 0.02, d * 0.55, mat('#5a4f45'), 0, h - plinthH - 0.12, 0));
+      break;
+    }
     case 'sideboard':
     case 'lowboard': {
       const body = wood(c);
@@ -521,25 +542,6 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
       );
       mirror.position.set(0, h + 0.65, d / 2 - 0.008);
       g.add(mirror);
-      break;
-    }
-    case 'door_room':
-    case 'door_apartment':
-    case 'door_wide':
-    case 'door_double': {
-      const frame = wood(c);
-      const frameW = 0.05;
-      const leafT = 0.04;
-      const openAngle = Math.PI / 5;
-      g.add(box(w, h, frameW, frame, 0, 0, -d / 2 + frameW / 2));
-      g.add(box(frameW, h, frameW, frame, -w / 2 + frameW / 2, 0, -d / 2 + frameW / 2));
-      g.add(box(frameW, h, frameW, frame, w / 2 - frameW / 2, 0, -d / 2 + frameW / 2));
-      g.add(box(w, frameW, frameW, frame, 0, h - frameW / 2, -d / 2 + frameW / 2));
-      const leaf = new THREE.Group();
-      leaf.add(box(w - frameW * 2, h - frameW, leafT, wood('#e8dcc8')));
-      leaf.position.set(-(w - frameW * 2) / 2, (h - frameW) / 2, -d / 2 + frameW + leafT / 2);
-      leaf.rotation.y = openAngle;
-      g.add(leaf);
       break;
     }
     default: {

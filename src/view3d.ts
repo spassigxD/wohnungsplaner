@@ -3,7 +3,8 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { Store, Wall } from './model';
 import { buildFurniture } from './furniture3d';
-import { getWallOpenings, splitWallAtOpenings } from './doors';
+import { getWallOpenings, isDoor, findWallForDoor, splitWallAtOpenings } from './doors';
+import { createDoor3D, doorWorldRotation, setDoorOpenAmount, type Door3DInstance } from './door3d';
 import { woodFloorTexture, plasterTexture, skyTexture } from './textures';
 
 const EYE_HEIGHT = 1.6; // m
@@ -28,11 +29,16 @@ export class View3D {
   private clock = new THREE.Clock();
   private keys = new Set<string>();
   private wallSegments: WallSegment[] = [];
+  private doors: Door3DInstance[] = [];
+  private raycaster = new THREE.Raycaster();
   private velocity = new THREE.Vector3();
   private keyDownHandler = (e: KeyboardEvent) => {
     this.keys.add(e.code);
-    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+    if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyE'].includes(e.code)) {
       e.preventDefault();
+    }
+    if (e.code === 'KeyE' && this.controls?.isLocked) {
+      this.tryToggleDoor();
     }
   };
   private keyUpHandler = (e: KeyboardEvent) => this.keys.delete(e.code);
@@ -121,8 +127,18 @@ export class View3D {
       }
     }
 
-    // Möbel
+    // Möbel & Türen
+    this.doors = [];
     for (const item of apt.furniture) {
+      if (isDoor(item.type)) {
+        const door = createDoor3D(item, apt.walls);
+        const wall = findWallForDoor(item, apt.walls);
+        door.root.position.set(item.x / 100, 0, item.y / 100);
+        door.root.rotation.y = doorWorldRotation(wall, item);
+        scene.add(door.root);
+        this.doors.push(door);
+        continue;
+      }
       const g = buildFurniture(item);
       g.position.set(item.x / 100, item.mount === 'ceiling' ? ceilY : item.elevation / 100, item.y / 100);
       g.rotation.y = (-item.rotation * Math.PI) / 180;
@@ -217,6 +233,7 @@ export class View3D {
     this.scene = null;
     this.camera = null;
     this.controls = null;
+    this.doors = [];
     this.container.style.display = 'none';
   }
 
@@ -249,6 +266,14 @@ export class View3D {
     this.animationId = requestAnimationFrame(this.animate);
 
     const delta = Math.min(this.clock.getDelta(), 0.1);
+    for (const door of this.doors) {
+      const target = door.open ? 1 : 0;
+      if (Math.abs(door.openAmount - target) > 0.001) {
+        const next = THREE.MathUtils.lerp(door.openAmount, target, 1 - Math.pow(0.001, delta));
+        setDoorOpenAmount(door, next);
+      }
+    }
+
     if (this.controls.isLocked) {
       const speed = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight') ? RUN_SPEED : WALK_SPEED;
       const dir = new THREE.Vector3();
@@ -270,6 +295,26 @@ export class View3D {
     }
 
     this.renderer.render(this.scene, this.camera);
+  };
+
+  private tryToggleDoor(): void {
+    if (!this.camera || !this.scene) return;
+    this.raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
+    const camPos = this.camera.position;
+    let best: Door3DInstance | null = null;
+    let bestDist = 2.8;
+
+    for (const door of this.doors) {
+      const hit = this.raycaster.intersectObjects(door.meshTargets, false)[0];
+      if (!hit) continue;
+      const dist = hit.point.distanceTo(camPos);
+      if (dist < bestDist) {
+        best = door;
+        bestDist = dist;
+      }
+    }
+
+    if (best) best.open = !best.open;
   };
 
   private resolveCollisions(): void {
