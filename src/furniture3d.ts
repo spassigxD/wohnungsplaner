@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import type { FurnitureItem } from './model';
 import { getCatalogEntry } from './catalog';
 import { woodGrainTexture, fabricTexture } from './textures';
-import { cornerSofaLayout, cornerSofaSide } from './cornerSofa';
+import { buildCornerSofa3D } from './cornerSofa3d';
+import { buildPiano3D } from './piano3d';
 import {
   buildBreakfastBar,
   buildKitchenBaseCabinet,
@@ -107,48 +108,9 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
       break;
     }
     case 'sofa_corner':
-    case 'sofa_corner_left': {
-      const base = fabric(c);
-      const side = cornerSofaSide(item.type);
-      const layout = cornerSofaLayout(item.width, item.depth, side);
-      const seatD = layout.seatDepth / 100;
-      const hw = w / 2;
-      const hd = d / 2;
-      const chaiseLen = layout.chaise.h / 100;
-      const chaiseX = layout.chaise.cx / 100;
-      const chaiseZ = layout.chaise.cy / 100;
-      const mainZ = layout.main.cy / 100;
-      const backT = seatD * 0.24;
-      const armW = Math.min(0.17, seatD * 0.7);
-      const seatH = h * 0.44;
-      const backH = h * 0.88;
-      const mainBackZ = -hd + seatD - backT / 2;
-
-      // Sitzflächen: Hauptteil (volle Breite) + Chaiselongue hinten
-      g.add(box(w, seatH, seatD, base, 0, 0, mainZ));
-      g.add(box(seatD, seatH, chaiseLen, base, chaiseX, 0, chaiseZ));
-
-      // L-förmige Rückenlehne
-      const mainBackW = w - seatD;
-      const mainBackX = side === 'right' ? -seatD / 2 : seatD / 2;
-      g.add(box(mainBackW, backH, backT, base, mainBackX, 0, mainBackZ));
-      const chaiseBackX = side === 'right' ? hw - backT / 2 : -hw + backT / 2;
-      g.add(box(backT, backH, chaiseLen, base, chaiseBackX, 0, chaiseZ));
-
-      // Armlehnen an den offenen Enden
-      const outerArmX = side === 'right' ? -hw + armW / 2 : hw - armW / 2;
-      g.add(box(armW, h * 0.72, seatD, base, outerArmX, 0, mainZ));
-      g.add(box(armW, h * 0.72, armW, base, chaiseX, 0, hd - armW / 2));
-
-      // Sitzkissen
-      const pad = 0.03;
-      g.add(box(w - pad * 2, 0.065, seatD - backT - pad, base, 0, seatH, mainZ - backT * 0.1));
-      g.add(
-        box(seatD - backT - pad, 0.065, chaiseLen - pad, base,
-          chaiseX + (side === 'right' ? -backT * 0.1 : backT * 0.1), seatH, chaiseZ)
-      );
+    case 'sofa_corner_left':
+      buildCornerSofa3D(g, item);
       break;
-    }
     case 'chair': {
       const m = wood(c);
       const seatH = h * 0.5;
@@ -562,72 +524,9 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
       g.add(mirror);
       break;
     }
-    case 'piano': {
-      const lacquer = mat('#101014', { roughness: 0.16, metalness: 0.28 });
-      const lacquerDark = mat('#1c1a18', { roughness: 0.22, metalness: 0.18 });
-      const ivory = mat('#f2ece0', { roughness: 0.42 });
-      const ebony = mat('#08080a', { roughness: 0.38 });
-      const brass = mat('#b8942a', { metalness: 0.92, roughness: 0.32 });
-      const pedalChrome = mat('#9aa4ae', { metalness: 0.88, roughness: 0.2 });
-
-      const baseH = 0.07;
-      const bodyH = h - baseH;
-      const keyDepth = d * 0.44;
-
-      // Sockel
-      g.add(box(w * 0.98, baseH, d * 0.94, lacquerDark, 0, 0, 0));
-
-      // Hauptgehäuse
-      g.add(box(w * 0.95, bodyH * 0.9, d * 0.9, lacquer, 0, baseH, 0));
-
-      // Seitenwangen (Cheeks)
-      const cheekW = w * 0.09;
-      const cheekD = d * 0.52;
-      g.add(box(cheekW, bodyH * 0.72, cheekD, lacquerDark, -w / 2 + cheekW / 2 + 0.015, baseH, -d * 0.06));
-      g.add(box(cheekW, bodyH * 0.72, cheekD, lacquerDark, w / 2 - cheekW / 2 - 0.015, baseH, -d * 0.06));
-
-      // Oberteil / Klappschutz
-      g.add(box(w * 0.92, bodyH * 0.1, d * 0.84, lacquer, 0, baseH + bodyH * 0.9, d * 0.02));
-      const hood = box(w * 0.88, bodyH * 0.07, d * 0.62, lacquer, 0, h * 0.97, d * 0.04);
-      hood.rotation.x = 0.12;
-      g.add(hood);
-
-      // Klappdeckel über der Klaviatur
-      const fall = box(w * 0.84, 0.022, d * 0.36, lacquerDark, 0, baseH + bodyH * 0.54, -d / 2 + d * 0.2);
-      fall.rotation.x = -0.22;
-      g.add(fall);
-
-      // Klaviatur
-      const kb = new THREE.Group();
-      kb.position.set(0, baseH + bodyH * 0.5, -d / 2 + keyDepth * 0.48);
-      kb.rotation.x = -0.19;
-      const whiteCount = 38;
-      const keyW = (w * 0.82) / whiteCount;
-      for (let i = 0; i < whiteCount; i++) {
-        const x = -w * 0.41 + keyW * i + keyW / 2;
-        kb.add(box(keyW * 0.9, 0.016, keyDepth * 0.82, ivory, x, 0, 0));
-        const note = i % 7;
-        if (i < whiteCount - 1 && [0, 1, 3, 4, 5].includes(note)) {
-          kb.add(box(keyW * 0.58, 0.026, keyDepth * 0.48, ebony, x + keyW * 0.5, 0.011, -keyDepth * 0.14));
-        }
-      }
-      g.add(kb);
-
-      // Notenaufleger
-      g.add(box(w * 0.52, 0.014, d * 0.18, lacquerDark, 0, baseH + bodyH * 0.74, -d / 2 + d * 0.13));
-      g.add(box(w * 0.48, bodyH * 0.16, 0.025, lacquer, 0, baseH + bodyH * 0.66, -d / 2 + 0.018));
-
-      // Pedalkonsolen
-      g.add(box(0.025, 0.09, 0.035, brass, -0.13, baseH * 0.55, -d / 2 + d * 0.09));
-      g.add(box(0.025, 0.09, 0.035, brass, 0.13, baseH * 0.55, -d / 2 + d * 0.09));
-      for (const px of [-0.09, 0, 0.09]) {
-        g.add(cylinder(0.028, 0.028, 0.014, pedalChrome, px, baseH * 0.42, -d / 2 + d * 0.11, 14));
-      }
-
-      // Griffleiste unter der Klaviatur
-      g.add(box(w * 0.78, 0.018, 0.03, brass, 0, baseH + bodyH * 0.38, -d / 2 + 0.02));
+    case 'piano':
+      buildPiano3D(g, w, d, h, c);
       break;
-    }
     default: {
       const entry = getCatalogEntry(item.type);
       g.add(box(w, h, d, mat(entry?.color ?? c)));
