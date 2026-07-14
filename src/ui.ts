@@ -1,6 +1,7 @@
 import { Store, FurnitureItem, Wall, uid } from './model';
 import { CATALOG, CATEGORIES } from './catalog';
 import { Editor2D } from './editor2d';
+import { isDoor, snapDoorToNearestWall } from './doors';
 
 export function setupUI(store: Store, editor: Editor2D): void {
   setupToolbar(store, editor);
@@ -104,6 +105,9 @@ function setupCatalog(store: Store, editor: Editor2D): void {
           mount: entry.mount,
         };
         store.setTool('select');
+        if (isDoor(item.type)) {
+          snapDoorToNearestWall(item, store.apartment.walls, store.snap);
+        }
         store.addFurniture(item);
       });
       group.appendChild(btn);
@@ -210,9 +214,48 @@ function rotationButtons(f: FurnitureItem, onChange: () => void): HTMLElement {
 }
 
 function renderFurnitureProps(body: HTMLElement, store: Store, f: FurnitureItem): void {
-  const commit = () => store.emit();
+  const commit = () => {
+    if (isDoor(f.type)) {
+      snapDoorToNearestWall(f, store.apartment.walls, store.snap);
+    }
+    store.emit();
+  };
 
   body.appendChild(textRow('Name', f.name, (v) => ((f.name = v), commit()), 'name'));
+
+  if (isDoor(f.type)) {
+    body.appendChild(
+      numberRow('Türbreite', f.width, 'cm', (v) => ((f.width = Math.max(60, v)), commit()), {
+        min: 60,
+        field: 'width',
+      })
+    );
+    body.appendChild(
+      numberRow('Türhöhe', f.height, 'cm', (v) => ((f.height = Math.max(180, v)), commit()), {
+        min: 180,
+        field: 'height',
+      })
+    );
+    body.appendChild(
+      numberRow('Drehung', f.rotation, '°', (v) => ((f.rotation = ((v % 360) + 360) % 360), commit()), {
+        step: 5,
+        field: 'rotation',
+      })
+    );
+
+    const hint = document.createElement('p');
+    hint.className = 'prop-hint';
+    hint.textContent = 'Türen werden automatisch an der nächsten Wand ausgerichtet und schneiden dort eine Öffnung frei.';
+    body.appendChild(hint);
+
+    const actions = document.createElement('div');
+    actions.className = 'prop-actions';
+    actions.appendChild(actionRow('Duplizieren (Strg+D)', 'duplicate', () => store.duplicateSelected()));
+    actions.appendChild(actionRow('Löschen (Entf)', 'danger', () => store.removeSelected()));
+    body.appendChild(actions);
+    return;
+  }
+
   body.appendChild(numberRow('Position X', f.x, 'cm', (v) => ((f.x = v), commit()), { field: 'x' }));
   body.appendChild(numberRow('Position Y', f.y, 'cm', (v) => ((f.y = v), commit()), { field: 'y' }));
   body.appendChild(
@@ -308,7 +351,8 @@ function renderApartmentProps(body: HTMLElement, store: Store): void {
     'Nichts ausgewählt.<br /><br />' +
     'Klicke auf eine <b>Wand</b> oder ein <b>Möbelstück</b>, um es zu bearbeiten – alle Maße sind zentimetergenau einstellbar.<br /><br />' +
     'Mit <b>Strg+D</b> duplizierst du die Auswahl (versetzt um das aktuelle Raster).<br /><br />' +
-    'Tipp: Lasse beim Wändezeichnen Lücken für Türen (üblich: 80–90 cm).';
+    'Türen aus dem Katalog an eine Wand setzen – sie richten sich automatisch aus und öffnen die Wand.<br /><br />' +
+    'Tipp: Zimmertüren sind meist 80 cm breit, Wohnungstüren 90 cm.';
   body.appendChild(hint);
 
   const section = document.createElement('div');

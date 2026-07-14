@@ -1,6 +1,8 @@
 // Alle Maße im Modell sind in Zentimetern (cm).
 // Die 3D-Ansicht rechnet in Meter um (1 Einheit = 1 m), damit alles maßstabsgetreu ist.
 
+import { isDoor, snapDoorToNearestWall } from './doors';
+
 export type Mount = 'floor' | 'ceiling';
 
 export interface Wall {
@@ -144,12 +146,16 @@ export class Store {
 
     const f = this.getFurniture(this.selection.id);
     if (!f) return;
-    this.addFurniture({
+    const copy: FurnitureItem = {
       ...f,
       id: uid(),
       x: f.x + offset,
       y: f.y + offset,
-    });
+    };
+    if (isDoor(f.type)) {
+      snapDoorToNearestWall(copy, this.apartment.walls, this.snap);
+    }
+    this.addFurniture(copy);
   }
 
   reset(): void {
@@ -232,13 +238,9 @@ export function defaultApartment(): Apartment {
     wall(0, 0, 800, 0, OUTER),
     wall(800, 0, 800, 600, OUTER),
     wall(0, 0, 0, 600, OUTER),
-    wall(0, 600, 200, 600, OUTER),
-    wall(290, 600, 800, 600, OUTER),
-    // Innenwand vertikal: trennt Wohnzimmer (links) von Schlafzimmer/Bad (rechts),
-    // Türöffnungen 90 cm
-    wall(450, 0, 450, 140),
-    wall(450, 230, 450, 440),
-    wall(450, 530, 450, 600),
+    wall(0, 600, 800, 600, OUTER),
+    // Innenwand vertikal: trennt Wohnzimmer (links) von Schlafzimmer/Bad (rechts)
+    wall(450, 0, 450, 600),
     // Innenwand horizontal: trennt Schlafzimmer (oben) und Bad (unten)
     wall(450, 380, 800, 380),
   ];
@@ -271,6 +273,11 @@ export function defaultApartment(): Apartment {
     item('sink', 'Waschbecken', 520, 560, 0, 60, 45, 85, '#f4f4f2'),
     item('toilet', 'WC', 640, 555, 0, 38, 62, 42, '#f4f4f2'),
     item('lamp_ceiling', 'Deckenlampe', 625, 490, 0, 30, 30, 25, '#ffffff', 'ceiling'),
+    // Türen in bestehenden Wandöffnungen
+    item('door_apartment', 'Wohnungstür', 245, 600, 0, 90, 12, 200, '#6b5238'),
+    item('door_room', 'Zimmertür', 450, 185, 90, 80, 12, 200, '#8b6f47'),
+    item('door_room', 'Zimmertür', 450, 485, 90, 80, 12, 200, '#8b6f47'),
+    item('door_room', 'Zimmertür', 450, 565, 90, 80, 12, 200, '#8b6f47'),
   ];
 
   return {

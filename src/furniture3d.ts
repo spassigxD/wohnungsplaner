@@ -417,6 +417,25 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
       g.add(mirror);
       break;
     }
+    case 'door_room':
+    case 'door_apartment':
+    case 'door_wide':
+    case 'door_double': {
+      const frame = wood(c);
+      const frameW = 0.05;
+      const leafT = 0.04;
+      const openAngle = Math.PI / 5;
+      g.add(box(w, h, frameW, frame, 0, 0, -d / 2 + frameW / 2));
+      g.add(box(frameW, h, frameW, frame, -w / 2 + frameW / 2, 0, -d / 2 + frameW / 2));
+      g.add(box(frameW, h, frameW, frame, w / 2 - frameW / 2, 0, -d / 2 + frameW / 2));
+      g.add(box(w, frameW, frameW, frame, 0, h - frameW / 2, -d / 2 + frameW / 2));
+      const leaf = new THREE.Group();
+      leaf.add(box(w - frameW * 2, h - frameW, leafT, wood('#e8dcc8')));
+      leaf.position.set(-(w - frameW * 2) / 2, (h - frameW) / 2, -d / 2 + frameW + leafT / 2);
+      leaf.rotation.y = openAngle;
+      g.add(leaf);
+      break;
+    }
     default: {
       const entry = getCatalogEntry(item.type);
       g.add(box(w, h, d, mat(entry?.color ?? c)));

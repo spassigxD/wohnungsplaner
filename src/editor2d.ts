@@ -1,4 +1,11 @@
 import { Store, Wall, FurnitureItem, uid } from './model';
+import {
+  getWallOpenings,
+  hitDoor,
+  isDoor,
+  snapDoorToNearestWall,
+  splitWallAtOpenings,
+} from './doors';
 
 interface Point {
   x: number;
@@ -133,6 +140,10 @@ export class Editor2D {
     const items = this.store.apartment.furniture;
     for (let i = items.length - 1; i >= 0; i--) {
       const f = items[i];
+      if (isDoor(f.type)) {
+        if (hitDoor(p, f, this.zoom)) return f;
+        continue;
+      }
       const rad = (-f.rotation * Math.PI) / 180;
       const dx = p.x - f.x;
       const dy = p.y - f.y;
@@ -275,6 +286,9 @@ export class Editor2D {
         if (f) {
           f.x = this.snap(world.x - this.drag.offset.x);
           f.y = this.snap(world.y - this.drag.offset.y);
+          if (isDoor(f.type)) {
+            snapDoorToNearestWall(f, this.store.apartment.walls, this.store.snap);
+          }
           this.store.emit();
         }
         break;
@@ -394,6 +408,9 @@ export class Editor2D {
       if (f) {
         const step = e.shiftKey ? -15 : 15;
         f.rotation = ((f.rotation + step) % 360 + 360) % 360;
+        if (isDoor(f.type)) {
+          snapDoorToNearestWall(f, this.store.apartment.walls, this.store.snap);
+        }
         this.store.emit();
       }
     }
@@ -460,27 +477,30 @@ export class Editor2D {
 
   private drawWall(ctx: CanvasRenderingContext2D, wall: Wall): void {
     const selected = this.store.selection?.kind === 'wall' && this.store.selection.id === wall.id;
+    const openings = getWallOpenings(wall, this.store.apartment.furniture);
+    const slices = splitWallAtOpenings(wall, openings);
 
-    if (selected) {
-      ctx.strokeStyle = 'rgba(80,160,255,0.5)';
-      ctx.lineWidth = wall.thickness + 8 / this.zoom;
+    for (const slice of slices) {
+      if (selected) {
+        ctx.strokeStyle = 'rgba(80,160,255,0.5)';
+        ctx.lineWidth = slice.thickness + 8 / this.zoom;
+        ctx.lineCap = 'butt';
+        ctx.beginPath();
+        ctx.moveTo(slice.x1, slice.y1);
+        ctx.lineTo(slice.x2, slice.y2);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = slice.color;
+      ctx.lineWidth = slice.thickness;
       ctx.lineCap = 'butt';
       ctx.beginPath();
-      ctx.moveTo(wall.x1, wall.y1);
-      ctx.lineTo(wall.x2, wall.y2);
+      ctx.moveTo(slice.x1, slice.y1);
+      ctx.lineTo(slice.x2, slice.y2);
       ctx.stroke();
     }
 
-    ctx.strokeStyle = wall.color;
-    ctx.lineWidth = wall.thickness;
-    ctx.lineCap = 'butt';
-    ctx.beginPath();
-    ctx.moveTo(wall.x1, wall.y1);
-    ctx.lineTo(wall.x2, wall.y2);
-    ctx.stroke();
-
     if (selected) {
-      // Endpunkt-Griffe
       for (const p of [{ x: wall.x1, y: wall.y1 }, { x: wall.x2, y: wall.y2 }]) {
         ctx.fillStyle = '#50a0ff';
         ctx.beginPath();
@@ -526,6 +546,11 @@ export class Editor2D {
   }
 
   private drawFurniture(ctx: CanvasRenderingContext2D, f: FurnitureItem): void {
+    if (isDoor(f.type)) {
+      this.drawDoor(ctx, f);
+      return;
+    }
+
     const selected = this.store.selection?.kind === 'furniture' && this.store.selection.id === f.id;
 
     ctx.save();
@@ -602,6 +627,62 @@ export class Editor2D {
         f.x,
         f.y + Math.max(f.width, f.depth) / 2 + 16 / this.zoom
       );
+      ctx.textAlign = 'start';
+    }
+  }
+
+  private drawDoor(ctx: CanvasRenderingContext2D, f: FurnitureItem): void {
+    const selected = this.store.selection?.kind === 'furniture' && this.store.selection.id === f.id;
+
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate((f.rotation * Math.PI) / 180);
+
+    const hw = f.width / 2;
+    const hd = Math.max(f.depth, 12) / 2;
+
+    ctx.fillStyle = withAlpha(f.color, 0.9);
+    ctx.fillRect(-hw, -hd, f.width, f.depth);
+    ctx.strokeStyle = selected ? '#50a0ff' : 'rgba(0,0,0,0.65)';
+    ctx.lineWidth = (selected ? 2.5 : 1.4) / this.zoom;
+    ctx.strokeRect(-hw, -hd, f.width, f.depth);
+
+    // Türblatt
+    ctx.fillStyle = withAlpha('#f2eadc', 0.95);
+    ctx.fillRect(-hw + 2 / this.zoom, -hd + 1 / this.zoom, f.width - 4 / this.zoom, hd);
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 1 / this.zoom;
+    ctx.strokeRect(-hw + 2 / this.zoom, -hd + 1 / this.zoom, f.width - 4 / this.zoom, hd);
+
+    // Öffnungsbogen
+    const hingeX = -hw;
+    ctx.strokeStyle = selected ? '#50a0ff' : 'rgba(120,180,255,0.75)';
+    ctx.lineWidth = 1.2 / this.zoom;
+    ctx.setLineDash([4 / this.zoom, 3 / this.zoom]);
+    ctx.beginPath();
+    ctx.arc(hingeX, hd, f.width, -Math.PI / 2, 0);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.restore();
+
+    const fontPx = 11 / this.zoom;
+    if (f.width * this.zoom > 40) {
+      ctx.font = `${fontPx}px system-ui, sans-serif`;
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(f.name, f.x, f.y, f.width * 0.95);
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+    }
+
+    if (selected) {
+      const fontPx = 12 / this.zoom;
+      ctx.font = `${fontPx}px system-ui, sans-serif`;
+      ctx.fillStyle = '#50a0ff';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${formatCm(f.width)} · ${Math.round(f.rotation)}°`, f.x, f.y + hd + 14 / this.zoom);
       ctx.textAlign = 'start';
     }
   }

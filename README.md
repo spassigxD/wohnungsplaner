@@ -11,6 +11,7 @@ in einer **First-Person-Ansicht** begehen.
   - Jede Wand einzeln anpassbar: Länge, Dicke, Höhe, Farbe – zentimetergenau über das Eigenschaften-Panel
   - Wände verschieben und Endpunkte per Griff nachträglich ziehen
   - Wände und Möbel per Klick oder **Strg+D** duplizieren (versetzt um das Raster)
+  - **Türen** aus dem Katalog: Zimmertür (80 cm), Wohnungstür (90 cm), breite und Doppeltüren – schneiden automatisch Wandöffnungen frei
   - Möbel per Klick aus dem Katalog platzieren, verschieben und drehen (blauer Griff ziehen, `R` oder Buttons im Panel)
   - Alle Möbelmaße (Breite × Tiefe × Höhe) und Farben frei einstellbar
   - Maßstabsleiste, Live-Cursor-Position in Metern und dynamische Maßstabsanzeige
@@ -45,14 +46,15 @@ npm run dev
 | Wand zeichnen | Werkzeug „Wand zeichnen“, dann klicken & ziehen (`Shift` = freier Winkel) |
 | Auswählen / verschieben | Werkzeug „Auswählen“, Element anklicken und ziehen |
 | Duplizieren | `Strg+D` / `Cmd+D` oder Button im Eigenschaften-Panel |
+| Tür platzieren | Im Katalog unter „Türen“ wählen und an eine Wand setzen |
 | Möbel drehen | Blauen Griff ziehen, `R` (+15°), `Shift+R` (−15°), Buttons oder Gradzahl im Panel |
 | Löschen | `Entf` / `Backspace` |
 | Ansicht verschieben | Rechte Maustaste ziehen oder `Leertaste` + ziehen |
 | Zoomen | `Strg`/`Cmd` + Scrollen (oder Pinch), Buttons `+`/`−` |
 | 3D begehen | Button „3D begehen“, dann klicken → `WASD` + Maus, `Esc` gibt die Maus frei |
 
-**Tipp Türen:** Türöffnungen entstehen, indem man beim Zeichnen einfach eine Lücke in der
-Wand lässt (üblich sind 80–90 cm für Zimmertüren, ~100 cm für Wohnungstüren).
+**Tipp Türen:** Türen aus dem Katalog an eine Wand ziehen – sie richten sich automatisch aus
+und schneiden die Öffnung frei (üblich: 80 cm Zimmertür, 90 cm Wohnungstür).
 
 ## Maßstab – was bedeutet das hier und was ist sinnvoll?
 

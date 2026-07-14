@@ -3,6 +3,7 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { Store, Wall } from './model';
 import { buildFurniture } from './furniture3d';
+import { getWallOpenings, splitWallAtOpenings } from './doors';
 import { woodFloorTexture, plasterTexture, skyTexture } from './textures';
 
 const EYE_HEIGHT = 1.6; // m
@@ -103,17 +104,21 @@ export class View3D {
     ceiling.position.set(bMinX + spanX / 2, ceilY, bMinZ + spanZ / 2);
     scene.add(ceiling);
 
-    // Wände
+    // Wände (mit Türöffnungen)
     this.wallSegments = [];
     for (const w of apt.walls) {
-      scene.add(this.buildWallMesh(w));
-      this.wallSegments.push({
-        x1: w.x1 / 100,
-        z1: w.y1 / 100,
-        x2: w.x2 / 100,
-        z2: w.y2 / 100,
-        halfThickness: w.thickness / 200,
-      });
+      const openings = getWallOpenings(w, apt.furniture);
+      const slices = splitWallAtOpenings(w, openings);
+      for (const slice of slices) {
+        scene.add(this.buildWallMesh(slice));
+        this.wallSegments.push({
+          x1: slice.x1 / 100,
+          z1: slice.y1 / 100,
+          x2: slice.x2 / 100,
+          z2: slice.y2 / 100,
+          halfThickness: slice.thickness / 200,
+        });
+      }
     }
 
     // Möbel
@@ -215,7 +220,7 @@ export class View3D {
     this.container.style.display = 'none';
   }
 
-  private buildWallMesh(w: Wall): THREE.Mesh {
+  private buildWallMesh(w: Wall | { x1: number; y1: number; x2: number; y2: number; thickness: number; height: number; color: string }): THREE.Mesh {
     const x1 = w.x1 / 100, z1 = w.y1 / 100, x2 = w.x2 / 100, z2 = w.y2 / 100;
     const len = Math.hypot(x2 - x1, z2 - z1);
     const height = w.height / 100;

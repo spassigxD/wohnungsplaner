@@ -71,6 +71,11 @@ export const CATALOG: CatalogEntry[] = [
   entry('shower', 'Dusche', 'Küche & Bad', 90, 90, 200, '#dfe6ea'),
   entry('sink', 'Waschbecken', 'Küche & Bad', 60, 45, 85, '#f4f4f2'),
   entry('toilet', 'WC', 'Küche & Bad', 38, 62, 42, '#f4f4f2'),
+  // Türen
+  entry('door_room', 'Zimmertür', 'Türen', 80, 12, 200, '#8b6f47'),
+  entry('door_apartment', 'Wohnungstür', 'Türen', 90, 12, 200, '#6b5238'),
+  entry('door_wide', 'Breite Tür', 'Türen', 100, 12, 200, '#7a6040'),
+  entry('door_double', 'Doppeltür', 'Türen', 160, 12, 200, '#6b5238'),
 ];
 
 export function getCatalogEntry(type: string): CatalogEntry | undefined {
