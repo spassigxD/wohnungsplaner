@@ -6,6 +6,7 @@ import {
   snapDoorToNearestWall,
   splitWallAtOpenings,
 } from './doors';
+import { cornerSofaLayout, pointInCornerSofa } from './cornerSofa';
 
 interface Point {
   x: number;
@@ -149,6 +150,10 @@ export class Editor2D {
       const dy = p.y - f.y;
       const lx = dx * Math.cos(rad) - dy * Math.sin(rad);
       const ly = dx * Math.sin(rad) + dy * Math.cos(rad);
+      if (f.type === 'sofa_corner') {
+        if (pointInCornerSofa(lx, ly, f.width, f.depth)) return f;
+        continue;
+      }
       if (Math.abs(lx) <= f.width / 2 && Math.abs(ly) <= f.depth / 2) return f;
     }
     return null;
@@ -550,6 +555,10 @@ export class Editor2D {
       this.drawDoor(ctx, f);
       return;
     }
+    if (f.type === 'sofa_corner') {
+      this.drawCornerSofa(ctx, f);
+      return;
+    }
 
     const selected = this.store.selection?.kind === 'furniture' && this.store.selection.id === f.id;
 
@@ -626,6 +635,77 @@ export class Editor2D {
         `${formatCm(f.width)} × ${formatCm(f.depth)} · ${Math.round(f.rotation)}°`,
         f.x,
         f.y + Math.max(f.width, f.depth) / 2 + 16 / this.zoom
+      );
+      ctx.textAlign = 'start';
+    }
+  }
+
+  private drawCornerSofa(ctx: CanvasRenderingContext2D, f: FurnitureItem): void {
+    const selected = this.store.selection?.kind === 'furniture' && this.store.selection.id === f.id;
+    const layout = cornerSofaLayout(f.width, f.depth);
+
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate((f.rotation * Math.PI) / 180);
+
+    const drawPart = (part: { cx: number; cy: number; w: number; h: number }, front = false) => {
+      ctx.fillStyle = withAlpha(f.color, 0.85);
+      ctx.fillRect(part.cx - part.w / 2, part.cy - part.h / 2, part.w, part.h);
+      ctx.strokeStyle = selected ? '#50a0ff' : 'rgba(0,0,0,0.55)';
+      ctx.lineWidth = (selected ? 2.5 : 1.2) / this.zoom;
+      ctx.strokeRect(part.cx - part.w / 2, part.cy - part.h / 2, part.w, part.h);
+      if (front) {
+        const top = part.cy - part.h / 2;
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.lineWidth = 1.2 / this.zoom;
+        ctx.beginPath();
+        ctx.moveTo(part.cx - part.w * 0.15, top);
+        ctx.lineTo(part.cx, top - Math.min(8, part.h * 0.35));
+        ctx.lineTo(part.cx + part.w * 0.15, top);
+        ctx.stroke();
+      }
+    };
+
+    drawPart(layout.main, true);
+    drawPart(layout.chaise);
+
+    ctx.restore();
+
+    const fontPx = 11 / this.zoom;
+    if (Math.max(f.width, f.depth) * this.zoom > 46) {
+      ctx.font = `${fontPx}px system-ui, sans-serif`;
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(f.name, f.x, f.y, Math.max(f.width, f.depth) * 0.9);
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+    }
+
+    if (selected) {
+      const handle = this.rotationHandlePos(f);
+      ctx.strokeStyle = '#50a0ff';
+      ctx.lineWidth = 1.5 / this.zoom;
+      ctx.beginPath();
+      ctx.moveTo(f.x, f.y);
+      ctx.lineTo(handle.x, handle.y);
+      ctx.stroke();
+      ctx.fillStyle = '#50a0ff';
+      ctx.beginPath();
+      ctx.arc(handle.x, handle.y, 7 / this.zoom, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5 / this.zoom;
+      ctx.stroke();
+
+      const labelPx = 12 / this.zoom;
+      ctx.font = `${labelPx}px system-ui, sans-serif`;
+      ctx.fillStyle = '#50a0ff';
+      ctx.textAlign = 'center';
+      ctx.fillText(
+        `${formatCm(f.width)} × ${formatCm(f.depth)} · ${Math.round(f.rotation)}°`,
+        f.x,
+        f.y + f.depth / 2 + 16 / this.zoom
       );
       ctx.textAlign = 'start';
     }

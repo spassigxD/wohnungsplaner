@@ -41,6 +41,7 @@ function entry(
 export const CATALOG: CatalogEntry[] = [
   // Wohnen
   entry('sofa', 'Sofa (3-Sitzer)', 'Wohnen', 220, 95, 80, '#5b7a8c'),
+  entry('sofa_corner', 'Übereck-Sofa', 'Wohnen', 260, 200, 80, '#5f6f7a'),
   entry('armchair', 'Sessel', 'Wohnen', 85, 85, 78, '#7d6b5d'),
   entry('dining_table', 'Esstisch', 'Wohnen', 160, 90, 75, '#a07850'),
   entry('coffee_table', 'Couchtisch', 'Wohnen', 110, 60, 45, '#8a6a4f'),

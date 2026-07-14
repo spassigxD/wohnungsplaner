@@ -16,7 +16,7 @@ in einer **First-Person-Ansicht** begehen.
   - Alle Möbelmaße (Breite × Tiefe × Höhe) und Farben frei einstellbar
   - Maßstabsleiste, Live-Cursor-Position in Metern und dynamische Maßstabsanzeige
 - **Möbelkatalog mit realen Standardmaßen**
-  - Wohnen: Sofa, Sessel, Esstisch, Couchtisch, Stuhl, Regal, Kommode, Teppich, Pflanze
+  - Wohnen: Sofa, **Übereck-Sofa**, Sessel, Esstisch, Couchtisch, Stuhl, Regal, Kommode, Teppich, Pflanze
   - Schlafen: Doppelbett (160×200), Einzelbett (90×200), Kleiderschrank
   - Technik: Schreibtisch, **Monitor**, **PC-Tower**, **Fernseher**, TV-Lowboard
   - Lampen: **Stehlampe**, Tischlampe, **Deckenlampe (Pendel)**, flache Deckenleuchte – alle leuchten in 3D echt
