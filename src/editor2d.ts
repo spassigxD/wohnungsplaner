@@ -685,24 +685,35 @@ export class Editor2D {
     ctx.lineWidth = (selected ? 2.5 : 1.4) / this.zoom;
     ctx.stroke();
 
-    // Rückenlehnen an Außenkanten
-    ctx.strokeStyle = 'rgba(0,0,0,0.32)';
-    ctx.lineWidth = Math.max(3, layout.seatDepth * 0.1) / this.zoom;
-    ctx.lineJoin = 'round';
+    // Rückenlehnen (dicke Linien an Außenkanten)
+    const backW = Math.max(4, layout.seatDepth * 0.12) / this.zoom;
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = backW;
+    ctx.lineCap = 'square';
     ctx.beginPath();
-    for (let i = 0; i < layout.backOutline.length; i++) {
-      const p = layout.backOutline[i];
-      if (i === 0) ctx.moveTo(p.x, p.y);
-      else ctx.lineTo(p.x, p.y);
+    if (layout.side === 'right') {
+      const by = -f.depth / 2 + layout.seatDepth;
+      ctx.moveTo(-f.width / 2, by);
+      ctx.lineTo(f.width / 2 - layout.seatDepth, by);
+      ctx.moveTo(f.width / 2, by);
+      ctx.lineTo(f.width / 2, f.depth / 2);
+    } else {
+      const by = -f.depth / 2 + layout.seatDepth;
+      ctx.moveTo(-f.width / 2, by);
+      ctx.lineTo(f.width / 2, by);
+      ctx.moveTo(-f.width / 2, by);
+      ctx.lineTo(-f.width / 2, f.depth / 2);
     }
     ctx.stroke();
     ctx.lineWidth = 1 / this.zoom;
 
-    // Sitzflächen-Trennung Hauptteil / Chaiselongue
-    ctx.strokeStyle = 'rgba(0,0,0,0.14)';
+    // Innenkante Chaiselongue
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
     ctx.beginPath();
     const splitX =
-      layout.side === 'right' ? layout.main.cx + layout.main.w / 2 : layout.main.cx - layout.main.w / 2;
+      layout.side === 'right'
+        ? f.width / 2 - layout.seatDepth
+        : -f.width / 2 + layout.seatDepth;
     ctx.moveTo(splitX, -f.depth / 2 + layout.seatDepth);
     ctx.lineTo(splitX, f.depth / 2);
     ctx.stroke();

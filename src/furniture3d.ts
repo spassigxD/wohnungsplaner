@@ -109,48 +109,43 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
     case 'sofa_corner':
     case 'sofa_corner_left': {
       const base = fabric(c);
-      const cushion = new THREE.MeshStandardMaterial({ map: fabricTexture(c), roughness: 0.98, metalness: 0 });
       const side = cornerSofaSide(item.type);
       const layout = cornerSofaLayout(item.width, item.depth, side);
       const seatD = layout.seatDepth / 100;
       const hw = w / 2;
       const hd = d / 2;
-      const mainW = w - seatD;
       const chaiseLen = layout.chaise.h / 100;
-      const mainX = layout.main.cx / 100;
-      const mainZ = layout.main.cy / 100;
       const chaiseX = layout.chaise.cx / 100;
       const chaiseZ = layout.chaise.cy / 100;
-      const backT = Math.min(0.2, seatD * 0.26);
-      const armW = Math.min(0.16, seatD * 0.68);
-      const seatH = h * 0.42;
-      const backH = h * 0.9;
+      const mainZ = layout.main.cy / 100;
+      const backT = seatD * 0.24;
+      const armW = Math.min(0.17, seatD * 0.7);
+      const seatH = h * 0.44;
+      const backH = h * 0.88;
       const mainBackZ = -hd + seatD - backT / 2;
 
-      // Sitzflächen (L-Form, ohne Überlappung)
-      g.add(box(mainW, seatH, seatD, base, mainX, 0, mainZ));
+      // Sitzflächen: Hauptteil (volle Breite) + Chaiselongue hinten
+      g.add(box(w, seatH, seatD, base, 0, 0, mainZ));
       g.add(box(seatD, seatH, chaiseLen, base, chaiseX, 0, chaiseZ));
 
-      // Rückenlehnen entlang der L-Außenkante
-      g.add(box(mainW, backH, backT, base, mainX, 0, mainBackZ));
+      // L-förmige Rückenlehne
+      const mainBackW = w - seatD;
+      const mainBackX = side === 'right' ? -seatD / 2 : seatD / 2;
+      g.add(box(mainBackW, backH, backT, base, mainBackX, 0, mainBackZ));
       const chaiseBackX = side === 'right' ? hw - backT / 2 : -hw + backT / 2;
       g.add(box(backT, backH, chaiseLen, base, chaiseBackX, 0, chaiseZ));
 
-      // Eckstück verbindet Haupt- und Chaise-Rückenlehne
-      const cornerX = side === 'right' ? hw - seatD + backT / 2 : -hw + seatD - backT / 2;
-      g.add(box(backT, backH, backT, base, cornerX, 0, mainBackZ));
-
-      // Armlehnen nur an den offenen Enden
+      // Armlehnen an den offenen Enden
       const outerArmX = side === 'right' ? -hw + armW / 2 : hw - armW / 2;
-      g.add(box(armW, h * 0.68, seatD, base, outerArmX, 0, mainZ));
-      g.add(box(armW, h * 0.68, armW, base, chaiseX, 0, hd - armW / 2));
+      g.add(box(armW, h * 0.72, seatD, base, outerArmX, 0, mainZ));
+      g.add(box(armW, h * 0.72, armW, base, chaiseX, 0, hd - armW / 2));
 
       // Sitzkissen
-      const pad = 0.035;
-      g.add(box(mainW - pad * 2, 0.07, seatD - backT - pad, cushion, mainX, seatH, mainZ - backT * 0.12));
+      const pad = 0.03;
+      g.add(box(w - pad * 2, 0.065, seatD - backT - pad, base, 0, seatH, mainZ - backT * 0.1));
       g.add(
-        box(seatD - backT - pad, 0.07, chaiseLen - pad, cushion,
-          chaiseX + (side === 'right' ? -backT * 0.12 : backT * 0.12), seatH, chaiseZ)
+        box(seatD - backT - pad, 0.065, chaiseLen - pad, base,
+          chaiseX + (side === 'right' ? -backT * 0.1 : backT * 0.1), seatH, chaiseZ)
       );
       break;
     }

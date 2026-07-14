@@ -11,15 +11,13 @@ export interface CornerSofaLayout {
   seatDepth: number;
   side: 'left' | 'right';
   outline: { x: number; y: number }[];
-  /** Rückenlehnen-Umriss (Außenkanten der L-Form) */
-  backOutline: { x: number; y: number }[];
 }
 
 export function cornerSofaLayout(width: number, depth: number, side: 'left' | 'right' = 'right'): CornerSofaLayout {
   const seatDepth = Math.min(100, Math.max(85, Math.round(width * 0.36)));
   const hw = width / 2;
   const hd = depth / 2;
-  const chaiseLen = Math.max(depth - seatDepth, seatDepth * 0.9);
+  const chaiseLen = depth - seatDepth;
   const chaiseCx = side === 'right' ? hw - seatDepth / 2 : -hw + seatDepth / 2;
 
   const outline =
@@ -41,32 +39,12 @@ export function cornerSofaLayout(width: number, depth: number, side: 'left' | 'r
           { x: -hw, y: -hd + seatDepth },
         ];
 
-  const backInset = Math.min(14, seatDepth * 0.14);
-  const backOutline =
-    side === 'right'
-      ? [
-          { x: -hw + backInset, y: -hd + seatDepth - backInset },
-          { x: hw - seatDepth + backInset, y: -hd + seatDepth - backInset },
-          { x: hw - seatDepth + backInset, y: hd - backInset },
-          { x: hw - backInset, y: hd - backInset },
-          { x: hw - backInset, y: -hd + seatDepth + backInset },
-        ]
-      : [
-          { x: -hw + backInset, y: -hd + seatDepth - backInset },
-          { x: hw - backInset, y: -hd + seatDepth - backInset },
-          { x: hw - backInset, y: hd - backInset },
-          { x: -hw + seatDepth - backInset, y: hd - backInset },
-          { x: -hw + seatDepth - backInset, y: -hd + seatDepth + backInset },
-          { x: -hw + backInset, y: -hd + seatDepth + backInset },
-        ];
-
   return {
     seatDepth,
     side,
-    main: { cx: side === 'right' ? -seatDepth / 2 : seatDepth / 2, cy: -hd + seatDepth / 2, w: width - seatDepth, h: seatDepth },
-    chaise: { cx: chaiseCx, cy: hd - chaiseLen / 2, w: seatDepth, h: chaiseLen },
+    main: { cx: 0, cy: -hd + seatDepth / 2, w: width, h: seatDepth },
+    chaise: { cx: chaiseCx, cy: -hd + seatDepth + chaiseLen / 2, w: seatDepth, h: chaiseLen },
     outline,
-    backOutline,
   };
 }
 
