@@ -685,17 +685,26 @@ export class Editor2D {
     ctx.lineWidth = (selected ? 2.5 : 1.4) / this.zoom;
     ctx.stroke();
 
-    // Innenkante zwischen Hauptteil und Chaiselongue
-    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
-    ctx.lineWidth = 1 / this.zoom;
+    // Rückenlehnen an Außenkanten
+    ctx.strokeStyle = 'rgba(0,0,0,0.32)';
+    ctx.lineWidth = Math.max(3, layout.seatDepth * 0.1) / this.zoom;
+    ctx.lineJoin = 'round';
     ctx.beginPath();
-    if (layout.side === 'right') {
-      ctx.moveTo(layout.main.w / 2 - layout.seatDepth, -f.depth / 2 + layout.seatDepth);
-      ctx.lineTo(layout.main.w / 2 - layout.seatDepth, f.depth / 2);
-    } else {
-      ctx.moveTo(-layout.main.w / 2 + layout.seatDepth, -f.depth / 2 + layout.seatDepth);
-      ctx.lineTo(-layout.main.w / 2 + layout.seatDepth, f.depth / 2);
+    for (let i = 0; i < layout.backOutline.length; i++) {
+      const p = layout.backOutline[i];
+      if (i === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x, p.y);
     }
+    ctx.stroke();
+    ctx.lineWidth = 1 / this.zoom;
+
+    // Sitzflächen-Trennung Hauptteil / Chaiselongue
+    ctx.strokeStyle = 'rgba(0,0,0,0.14)';
+    ctx.beginPath();
+    const splitX =
+      layout.side === 'right' ? layout.main.cx + layout.main.w / 2 : layout.main.cx - layout.main.w / 2;
+    ctx.moveTo(splitX, -f.depth / 2 + layout.seatDepth);
+    ctx.lineTo(splitX, f.depth / 2);
     ctx.stroke();
 
     // Vorderseite (oben = -Y)
@@ -760,27 +769,56 @@ export class Editor2D {
     const hw = f.width / 2;
     const hd = f.depth / 2;
 
-    ctx.fillStyle = withAlpha(f.color, 0.92);
+    // Gehäuse
+    ctx.fillStyle = withAlpha(f.color, 0.94);
     ctx.fillRect(-hw, -hd, f.width, f.depth);
     ctx.strokeStyle = selected ? '#50a0ff' : 'rgba(0,0,0,0.6)';
     ctx.lineWidth = (selected ? 2.5 : 1.2) / this.zoom;
     ctx.strokeRect(-hw, -hd, f.width, f.depth);
 
-    // Klaviatur an der Vorderseite (-Y)
-    const kbD = f.depth * 0.38;
-    ctx.fillStyle = 'rgba(242,239,232,0.95)';
-    ctx.fillRect(-hw * 0.9, -hd, f.width * 0.9, kbD);
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-    ctx.lineWidth = 1 / this.zoom;
-    ctx.strokeRect(-hw * 0.9, -hd, f.width * 0.9, kbD);
+    // Seitenwangen
+    const cheekW = f.width * 0.09;
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(-hw, -hd + f.depth * 0.08, cheekW, f.depth * 0.55);
+    ctx.fillRect(hw - cheekW, -hd + f.depth * 0.08, cheekW, f.depth * 0.55);
 
-    // Schwarze Tasten angedeutet
-    ctx.fillStyle = 'rgba(0,0,0,0.75)';
-    const keyW = (f.width * 0.9) / 14;
-    for (let i = 0; i < 14; i++) {
+    // Klaviatur an der Vorderseite (-Y)
+    const kbD = f.depth * 0.4;
+    ctx.fillStyle = 'rgba(242,236,224,0.96)';
+    ctx.fillRect(-hw * 0.88, -hd, f.width * 0.88, kbD);
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 1 / this.zoom;
+    ctx.strokeRect(-hw * 0.88, -hd, f.width * 0.88, kbD);
+
+    // Einzeltasten angedeutet
+    const keyCount = 16;
+    const keyW = (f.width * 0.88) / keyCount;
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    for (let i = 1; i < keyCount; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-hw * 0.88 + i * keyW, -hd);
+      ctx.lineTo(-hw * 0.88 + i * keyW, -hd + kbD);
+      ctx.stroke();
+    }
+
+    // Schwarze Tasten
+    ctx.fillStyle = 'rgba(0,0,0,0.78)';
+    for (let i = 0; i < keyCount; i++) {
       if (i % 3 === 1) {
-        ctx.fillRect(-hw * 0.9 + i * keyW + keyW * 0.15, -hd, keyW * 0.55, kbD * 0.55);
+        ctx.fillRect(-hw * 0.88 + i * keyW + keyW * 0.12, -hd, keyW * 0.58, kbD * 0.52);
       }
+    }
+
+    // Notenpult / Oberteil
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.fillRect(-hw * 0.35, hd - f.depth * 0.22, f.width * 0.7, f.depth * 0.18);
+
+    // Pedale
+    ctx.fillStyle = 'rgba(184,148,42,0.85)';
+    for (const px of [-0.09, 0, 0.09]) {
+      ctx.beginPath();
+      ctx.ellipse(px * f.width, -hd + f.depth * 0.1, f.width * 0.035, f.depth * 0.05, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // Vorderseiten-Markierung

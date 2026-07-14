@@ -109,36 +109,49 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
     case 'sofa_corner':
     case 'sofa_corner_left': {
       const base = fabric(c);
+      const cushion = new THREE.MeshStandardMaterial({ map: fabricTexture(c), roughness: 0.98, metalness: 0 });
       const side = cornerSofaSide(item.type);
       const layout = cornerSofaLayout(item.width, item.depth, side);
       const seatD = layout.seatDepth / 100;
       const hw = w / 2;
       const hd = d / 2;
+      const mainW = w - seatD;
       const chaiseLen = layout.chaise.h / 100;
-      const mainZ = -hd + seatD / 2;
-      const chaiseZ = hd - chaiseLen / 2;
-      const chaiseX = side === 'right' ? hw - seatD / 2 : -hw + seatD / 2;
-      const backT = seatD * 0.28;
-      const armW = Math.min(0.18, seatD * 0.75);
-      const seatH = h * 0.45;
+      const mainX = layout.main.cx / 100;
+      const mainZ = layout.main.cy / 100;
+      const chaiseX = layout.chaise.cx / 100;
+      const chaiseZ = layout.chaise.cy / 100;
+      const backT = Math.min(0.2, seatD * 0.26);
+      const armW = Math.min(0.16, seatD * 0.68);
+      const seatH = h * 0.42;
+      const backH = h * 0.9;
+      const mainBackZ = -hd + seatD - backT / 2;
 
-      // Sitzflächen (L-Form)
-      g.add(box(w, seatH, seatD, base, 0, 0, mainZ));
+      // Sitzflächen (L-Form, ohne Überlappung)
+      g.add(box(mainW, seatH, seatD, base, mainX, 0, mainZ));
       g.add(box(seatD, seatH, chaiseLen, base, chaiseX, 0, chaiseZ));
 
-      // Rückenlehnen an den Außenkanten
-      g.add(box(w, h, backT, base, 0, 0, -hd + backT / 2));
+      // Rückenlehnen entlang der L-Außenkante
+      g.add(box(mainW, backH, backT, base, mainX, 0, mainBackZ));
       const chaiseBackX = side === 'right' ? hw - backT / 2 : -hw + backT / 2;
-      g.add(box(backT, h, chaiseLen, base, chaiseBackX, 0, chaiseZ));
+      g.add(box(backT, backH, chaiseLen, base, chaiseBackX, 0, chaiseZ));
 
-      // Armlehnen: Ende des Hauptteils + Ende der Chaiselongue
-      const mainArmX = side === 'right' ? -hw + armW / 2 : hw - armW / 2;
-      g.add(box(armW, h * 0.7, seatD, base, mainArmX, 0, mainZ));
-      g.add(box(seatD, h * 0.7, armW, base, chaiseX, 0, hd - armW / 2));
+      // Eckstück verbindet Haupt- und Chaise-Rückenlehne
+      const cornerX = side === 'right' ? hw - seatD + backT / 2 : -hw + seatD - backT / 2;
+      g.add(box(backT, backH, backT, base, cornerX, 0, mainBackZ));
 
-      // Sitzkissen andeuten
-      g.add(box(w * 0.96, 0.06, seatD * 0.8, fabric(c), 0, seatH, mainZ + backT * 0.25));
-      g.add(box(seatD * 0.8, 0.06, chaiseLen * 0.92, fabric(c), chaiseX + (side === 'right' ? -backT * 0.25 : backT * 0.25), seatH, chaiseZ));
+      // Armlehnen nur an den offenen Enden
+      const outerArmX = side === 'right' ? -hw + armW / 2 : hw - armW / 2;
+      g.add(box(armW, h * 0.68, seatD, base, outerArmX, 0, mainZ));
+      g.add(box(armW, h * 0.68, armW, base, chaiseX, 0, hd - armW / 2));
+
+      // Sitzkissen
+      const pad = 0.035;
+      g.add(box(mainW - pad * 2, 0.07, seatD - backT - pad, cushion, mainX, seatH, mainZ - backT * 0.12));
+      g.add(
+        box(seatD - backT - pad, 0.07, chaiseLen - pad, cushion,
+          chaiseX + (side === 'right' ? -backT * 0.12 : backT * 0.12), seatH, chaiseZ)
+      );
       break;
     }
     case 'chair': {
@@ -555,45 +568,69 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
       break;
     }
     case 'piano': {
-      const body = mat('#141418', { roughness: 0.35, metalness: 0.15 });
-      const wood = mat('#2a2520', { roughness: 0.45 });
-      const keyWhite = mat('#f2efe8', { roughness: 0.55 });
-      const keyBlack = mat('#101014', { roughness: 0.5 });
-      const legH = 0.1;
-      const cabinetH = h - legH;
+      const lacquer = mat('#101014', { roughness: 0.16, metalness: 0.28 });
+      const lacquerDark = mat('#1c1a18', { roughness: 0.22, metalness: 0.18 });
+      const ivory = mat('#f2ece0', { roughness: 0.42 });
+      const ebony = mat('#08080a', { roughness: 0.38 });
+      const brass = mat('#b8942a', { metalness: 0.92, roughness: 0.32 });
+      const pedalChrome = mat('#9aa4ae', { metalness: 0.88, roughness: 0.2 });
 
-      // Beine
-      for (const [lx, lz] of [
-        [-w / 2 + 0.08, -d / 2 + 0.08],
-        [w / 2 - 0.08, -d / 2 + 0.08],
-        [-w / 2 + 0.08, d / 2 - 0.08],
-        [w / 2 - 0.08, d / 2 - 0.08],
-      ]) {
-        g.add(box(0.07, legH, 0.07, wood, lx, 0, lz));
-      }
+      const baseH = 0.07;
+      const bodyH = h - baseH;
+      const keyDepth = d * 0.44;
 
-      // Gehäuse
-      g.add(box(w * 0.98, cabinetH * 0.92, d * 0.96, body, 0, legH, 0));
+      // Sockel
+      g.add(box(w * 0.98, baseH, d * 0.94, lacquerDark, 0, 0, 0));
 
-      // Klaviatur (leicht nach vorne geneigt)
+      // Hauptgehäuse
+      g.add(box(w * 0.95, bodyH * 0.9, d * 0.9, lacquer, 0, baseH, 0));
+
+      // Seitenwangen (Cheeks)
+      const cheekW = w * 0.09;
+      const cheekD = d * 0.52;
+      g.add(box(cheekW, bodyH * 0.72, cheekD, lacquerDark, -w / 2 + cheekW / 2 + 0.015, baseH, -d * 0.06));
+      g.add(box(cheekW, bodyH * 0.72, cheekD, lacquerDark, w / 2 - cheekW / 2 - 0.015, baseH, -d * 0.06));
+
+      // Oberteil / Klappschutz
+      g.add(box(w * 0.92, bodyH * 0.1, d * 0.84, lacquer, 0, baseH + bodyH * 0.9, d * 0.02));
+      const hood = box(w * 0.88, bodyH * 0.07, d * 0.62, lacquer, 0, h * 0.97, d * 0.04);
+      hood.rotation.x = 0.12;
+      g.add(hood);
+
+      // Klappdeckel über der Klaviatur
+      const fall = box(w * 0.84, 0.022, d * 0.36, lacquerDark, 0, baseH + bodyH * 0.54, -d / 2 + d * 0.2);
+      fall.rotation.x = -0.22;
+      g.add(fall);
+
+      // Klaviatur
       const kb = new THREE.Group();
-      kb.add(box(w * 0.88, 0.03, d * 0.42, keyWhite, 0, 0, 0));
-      for (let i = -18; i <= 18; i++) {
-        if (Math.abs(i) % 3 !== 0) continue;
-        kb.add(box(0.012, 0.035, d * 0.2, keyBlack, i * 0.018, 0.01, -d * 0.08));
+      kb.position.set(0, baseH + bodyH * 0.5, -d / 2 + keyDepth * 0.48);
+      kb.rotation.x = -0.19;
+      const whiteCount = 38;
+      const keyW = (w * 0.82) / whiteCount;
+      for (let i = 0; i < whiteCount; i++) {
+        const x = -w * 0.41 + keyW * i + keyW / 2;
+        kb.add(box(keyW * 0.9, 0.016, keyDepth * 0.82, ivory, x, 0, 0));
+        const note = i % 7;
+        if (i < whiteCount - 1 && [0, 1, 3, 4, 5].includes(note)) {
+          kb.add(box(keyW * 0.58, 0.026, keyDepth * 0.48, ebony, x + keyW * 0.5, 0.011, -keyDepth * 0.14));
+        }
       }
-      kb.position.set(0, legH + cabinetH * 0.58, -d / 2 + d * 0.22);
-      kb.rotation.x = -0.18;
       g.add(kb);
 
-      // Notenpult
-      g.add(box(w * 0.55, 0.02, d * 0.18, wood, 0, legH + cabinetH * 0.78, -d / 2 + d * 0.12));
-      g.add(box(w * 0.5, cabinetH * 0.18, 0.03, body, 0, legH + cabinetH * 0.7, -d / 2 + 0.02));
+      // Notenaufleger
+      g.add(box(w * 0.52, 0.014, d * 0.18, lacquerDark, 0, baseH + bodyH * 0.74, -d / 2 + d * 0.13));
+      g.add(box(w * 0.48, bodyH * 0.16, 0.025, lacquer, 0, baseH + bodyH * 0.66, -d / 2 + 0.018));
 
-      // Pedale
-      for (const px of [-0.1, 0, 0.1]) {
-        g.add(box(0.05, 0.02, 0.12, mat('#b8bec4', { metalness: 0.8, roughness: 0.25 }), px, legH + 0.02, -d / 2 + 0.08));
+      // Pedalkonsolen
+      g.add(box(0.025, 0.09, 0.035, brass, -0.13, baseH * 0.55, -d / 2 + d * 0.09));
+      g.add(box(0.025, 0.09, 0.035, brass, 0.13, baseH * 0.55, -d / 2 + d * 0.09));
+      for (const px of [-0.09, 0, 0.09]) {
+        g.add(cylinder(0.028, 0.028, 0.014, pedalChrome, px, baseH * 0.42, -d / 2 + d * 0.11, 14));
       }
+
+      // Griffleiste unter der Klaviatur
+      g.add(box(w * 0.78, 0.018, 0.03, brass, 0, baseH + bodyH * 0.38, -d / 2 + 0.02));
       break;
     }
     default: {
