@@ -28,16 +28,14 @@ in einer **First-Person-Ansicht** begehen.
 
 ## Starten
 
+Direkt im Browser öffnen: [https://spassigxD.github.io/wohnungsplaner/](https://spassigxD.github.io/wohnungsplaner/)
+
+Lokal entwickeln:
+
 ```bash
 npm install
 npm run dev
 ```
-
-Dann [http://localhost:5173](http://localhost:5173) öffnen.
-
-## Live-Demo
-
-[https://spassigxD.github.io/wohnungsplaner/](https://spassigxD.github.io/wohnungsplaner/)
 
 ## Bedienung
 
