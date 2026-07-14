@@ -3,7 +3,7 @@ import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockCont
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { Store, Wall } from './model';
 import { buildFurniture } from './furniture3d';
-import { getWallOpenings, isDoor, findWallForDoor, splitWallAtOpenings } from './doors';
+import { getWallOpenings, isDoor, findWallForDoor, doorOpeningOnWall, splitWallAtOpenings } from './doors';
 import { createDoor3D, doorWorldRotation, setDoorOpenAmount, type Door3DInstance } from './door3d';
 import { woodFloorTexture, plasterTexture, skyTexture } from './textures';
 
@@ -124,6 +124,24 @@ export class View3D {
           z2: slice.y2 / 100,
           halfThickness: slice.thickness / 200,
         });
+      }
+
+      // Sturz: Wandstück oberhalb jeder Türöffnung
+      for (const item of apt.furniture) {
+        if (!isDoor(item.type)) continue;
+        const opening = doorOpeningOnWall(item, w);
+        if (!opening || item.height >= w.height - 1) continue;
+        const lintel = this.buildWallMesh({
+          x1: w.x1 + (w.x2 - w.x1) * opening.start,
+          y1: w.y1 + (w.y2 - w.y1) * opening.start,
+          x2: w.x1 + (w.x2 - w.x1) * opening.end,
+          y2: w.y1 + (w.y2 - w.y1) * opening.end,
+          thickness: w.thickness,
+          height: w.height - item.height,
+          color: w.color,
+        });
+        lintel.position.y = (item.height + (w.height - item.height) / 2) / 100;
+        scene.add(lintel);
       }
     }
 
@@ -320,9 +338,27 @@ export class View3D {
   private resolveCollisions(): void {
     if (!this.camera) return;
     const p = this.camera.position;
+
+    // Geschlossene Türen blockieren wie ein Wandstück
+    const segments: WallSegment[] = [...this.wallSegments];
+    for (const door of this.doors) {
+      if (door.openAmount > 0.5) continue;
+      const r = (door.item.rotation * Math.PI) / 180;
+      const dx = Math.cos(r);
+      const dz = Math.sin(r);
+      const halfW = door.item.width / 200;
+      segments.push({
+        x1: door.item.x / 100 - dx * halfW,
+        z1: door.item.y / 100 - dz * halfW,
+        x2: door.item.x / 100 + dx * halfW,
+        z2: door.item.y / 100 + dz * halfW,
+        halfThickness: 0.05,
+      });
+    }
+
     for (let iter = 0; iter < 3; iter++) {
       let pushed = false;
-      for (const s of this.wallSegments) {
+      for (const s of segments) {
         const dx = s.x2 - s.x1;
         const dz = s.z2 - s.z1;
         const lenSq = dx * dx + dz * dz;

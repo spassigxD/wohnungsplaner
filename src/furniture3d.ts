@@ -118,17 +118,27 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
       const mainZ = -hd + seatD / 2;
       const chaiseZ = hd - chaiseLen / 2;
       const chaiseX = side === 'right' ? hw - seatD / 2 : -hw + seatD / 2;
-      const chaiseBackX = side === 'right' ? hw - seatD * 0.14 : -hw + seatD * 0.14;
-      const mainArmX = side === 'right' ? -w / 2 + Math.min(0.18, seatD * 0.75) / 2 : w / 2 - Math.min(0.18, seatD * 0.75) / 2;
-
-      g.add(box(w, h * 0.45, seatD, base, 0, 0, mainZ));
-      g.add(box(w, h, seatD * 0.28, base, 0, 0, -hd + seatD - seatD * 0.14));
-      g.add(box(seatD, h * 0.45, chaiseLen, base, chaiseX, 0, chaiseZ));
-      g.add(box(seatD * 0.28, h, chaiseLen, base, chaiseBackX, 0, chaiseZ));
-
+      const backT = seatD * 0.28;
       const armW = Math.min(0.18, seatD * 0.75);
-      g.add(box(armW, h * 0.75, seatD, base, mainArmX, 0, mainZ));
-      g.add(box(armW, h * 0.75, chaiseLen, base, chaiseX, 0, chaiseZ));
+      const seatH = h * 0.45;
+
+      // Sitzflächen (L-Form)
+      g.add(box(w, seatH, seatD, base, 0, 0, mainZ));
+      g.add(box(seatD, seatH, chaiseLen, base, chaiseX, 0, chaiseZ));
+
+      // Rückenlehnen an den Außenkanten
+      g.add(box(w, h, backT, base, 0, 0, -hd + backT / 2));
+      const chaiseBackX = side === 'right' ? hw - backT / 2 : -hw + backT / 2;
+      g.add(box(backT, h, chaiseLen, base, chaiseBackX, 0, chaiseZ));
+
+      // Armlehnen: Ende des Hauptteils + Ende der Chaiselongue
+      const mainArmX = side === 'right' ? -hw + armW / 2 : hw - armW / 2;
+      g.add(box(armW, h * 0.7, seatD, base, mainArmX, 0, mainZ));
+      g.add(box(seatD, h * 0.7, armW, base, chaiseX, 0, hd - armW / 2));
+
+      // Sitzkissen andeuten
+      g.add(box(w * 0.96, 0.06, seatD * 0.8, fabric(c), 0, seatH, mainZ + backT * 0.25));
+      g.add(box(seatD * 0.8, 0.06, chaiseLen * 0.92, fabric(c), chaiseX + (side === 'right' ? -backT * 0.25 : backT * 0.25), seatH, chaiseZ));
       break;
     }
     case 'chair': {

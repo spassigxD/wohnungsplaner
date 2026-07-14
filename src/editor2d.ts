@@ -1,9 +1,11 @@
 import { Store, Wall, FurnitureItem, uid } from './model';
 import {
+  doorOpeningOnWall,
   getWallOpenings,
   hitDoor,
   isDoor,
   snapDoorToNearestWall,
+  snapDoorToWall,
   splitWallAtOpenings,
 } from './doors';
 import { cornerSofaLayout, cornerSofaSide, isCornerSofa, pointInCornerSofa } from './cornerSofa';
@@ -18,8 +20,8 @@ type DragState =
   | { kind: 'pan'; startClient: Point; startView: Point }
   | { kind: 'furniture'; id: string; offset: Point }
   | { kind: 'furniture-rotate'; id: string }
-  | { kind: 'wall-endpoint'; id: string; end: 1 | 2 }
-  | { kind: 'wall-body'; id: string; start: Point; orig: { x1: number; y1: number; x2: number; y2: number } }
+  | { kind: 'wall-endpoint'; id: string; end: 1 | 2; doorIds: string[] }
+  | { kind: 'wall-body'; id: string; start: Point; orig: { x1: number; y1: number; x2: number; y2: number }; doorIds: string[] }
   | { kind: 'draw-wall'; start: Point; current: Point };
 
 export class Editor2D {
@@ -125,6 +127,21 @@ export class Editor2D {
   }
 
   /** Snappt auf Endpunkte existierender Wände (Magnet), sonst aufs Raster. */
+  /** IDs aller Türen, die aktuell in dieser Wand sitzen. */
+  private attachedDoorIds(wall: Wall): string[] {
+    return this.store.apartment.furniture
+      .filter((f) => isDoor(f.type) && doorOpeningOnWall(f, wall))
+      .map((f) => f.id);
+  }
+
+  /** Türen nach einer Wandänderung wieder exakt in die Wand setzen. */
+  private resnapDoors(doorIds: string[], wall: Wall): void {
+    for (const id of doorIds) {
+      const f = this.store.getFurniture(id);
+      if (f) snapDoorToWall(f, wall, this.store.snap);
+    }
+  }
+
   private snapWallPoint(p: Point): Point {
     const magnetDist = 12 / this.zoom;
     for (const w of this.store.apartment.walls) {
@@ -228,7 +245,7 @@ export class Editor2D {
     if (selWall) {
       const end = this.hitWallEndpoint(world, selWall);
       if (end) {
-        this.drag = { kind: 'wall-endpoint', id: selWall.id, end };
+        this.drag = { kind: 'wall-endpoint', id: selWall.id, end, doorIds: this.attachedDoorIds(selWall) };
         return;
       }
     }
@@ -254,6 +271,7 @@ export class Editor2D {
         id: w.id,
         start: world,
         orig: { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 },
+        doorIds: this.attachedDoorIds(w),
       };
       return;
     }
@@ -317,6 +335,7 @@ export class Editor2D {
             w.x2 = p.x;
             w.y2 = p.y;
           }
+          this.resnapDoors(this.drag.doorIds, w);
           this.store.emit();
         }
         break;
@@ -330,6 +349,7 @@ export class Editor2D {
           w.y1 = this.drag.orig.y1 + dy;
           w.x2 = this.drag.orig.x2 + dx;
           w.y2 = this.drag.orig.y2 + dy;
+          this.resnapDoors(this.drag.doorIds, w);
           this.store.emit();
         }
         break;

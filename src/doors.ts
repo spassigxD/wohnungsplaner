@@ -97,7 +97,9 @@ export function doorOpeningOnWall(
   if (len === 0) return null;
 
   const wAng = wallAngleDeg(wall);
-  const diff = Math.abs(((door.rotation - wAng + 180) % 360) - 180);
+  // Wandrichtung ist symmetrisch: 0° und 180° sind dieselbe Ausrichtung
+  let diff = Math.abs(door.rotation - wAng) % 180;
+  diff = Math.min(diff, 180 - diff);
   if (diff > angleTolerance) return null;
   if (distToWall({ x: door.x, y: door.y }, wall) > wall.thickness / 2 + 8) return null;
 

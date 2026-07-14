@@ -6,6 +6,7 @@ function mat(color: string | number, opts: Partial<THREE.MeshStandardMaterialPar
   return new THREE.MeshStandardMaterial({ color, roughness: 0.75, metalness: 0.05, ...opts });
 }
 
+// y = Unterkante (box hebt selbst um h/2 an)
 function box(w: number, h: number, d: number, material: THREE.Material, x = 0, y = 0, z = 0): THREE.Mesh {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
   m.position.set(x, y + h / 2, z);
@@ -18,7 +19,7 @@ export interface Door3DInstance {
   root: THREE.Group;
   leaf: THREE.Group;
   leaf2?: THREE.Group;
-  itemId: string;
+  item: FurnitureItem;
   open: boolean;
   openAmount: number;
   meshTargets: THREE.Object3D[];
@@ -42,8 +43,8 @@ function addLeaf(
   const group = new THREE.Group();
   group.position.set(hingeX, 0, 0);
   const dir = mirror ? -1 : 1;
-  const panel = box(leafW, leafH, leafT, leafMat, dir * (leafW / 2), leafH / 2, 0);
-  const handle = box(0.02, 0.12, 0.03, handleMat, dir * (leafW * 0.82), leafH * 0.48, 0.02);
+  const panel = box(leafW, leafH, leafT, leafMat, dir * (leafW / 2), 0, 0);
+  const handle = box(0.02, 0.12, 0.03, handleMat, dir * (leafW * 0.82), leafH * 0.42, leafT / 2 + 0.015);
   group.add(panel, handle);
   root.add(group);
   return { group, meshes: [panel, handle] };
@@ -66,7 +67,7 @@ export function createDoor3D(item: FurnitureItem, walls: Wall[]): Door3DInstance
   // Nur Zargen – kein volles Rückenteil in der Öffnung
   root.add(box(jamb, h, wallDepth, frame, -halfW + jamb / 2, 0, 0));
   root.add(box(jamb, h, wallDepth, frame, halfW - jamb / 2, 0, 0));
-  root.add(box(w, jamb, wallDepth, frame, 0, h - jamb / 2, 0));
+  root.add(box(w, jamb, wallDepth, frame, 0, h - jamb, 0));
 
   const meshTargets: THREE.Object3D[] = [];
   const leafH = Math.max(0.5, h - jamb);
@@ -76,13 +77,13 @@ export function createDoor3D(item: FurnitureItem, walls: Wall[]): Door3DInstance
     const left = addLeaf(root, -halfW + jamb, leafW, leafH, leafT, leafMat, handleMat, false);
     const right = addLeaf(root, halfW - jamb, leafW, leafH, leafT, leafMat, handleMat, true);
     meshTargets.push(...left.meshes, ...right.meshes);
-    return { root, leaf: left.group, leaf2: right.group, itemId: item.id, open: false, openAmount: 0, meshTargets };
+    return { root, leaf: left.group, leaf2: right.group, item, open: false, openAmount: 0, meshTargets };
   }
 
   const leafW = Math.max(0.2, w - jamb * 2);
   const left = addLeaf(root, -halfW + jamb, leafW, leafH, leafT, leafMat, handleMat, false);
   meshTargets.push(...left.meshes);
-  return { root, leaf: left.group, itemId: item.id, open: false, openAmount: 0, meshTargets };
+  return { root, leaf: left.group, item, open: false, openAmount: 0, meshTargets };
 }
 
 export function setDoorOpenAmount(door: Door3DInstance, amount: number): void {
