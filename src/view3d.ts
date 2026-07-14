@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { Store, Wall } from './model';
 import { buildFurniture } from './furniture3d';
+import { woodFloorTexture, plasterTexture, skyTexture } from './textures';
 
 const EYE_HEIGHT = 1.6; // m
 const PLAYER_RADIUS = 0.22; // m
@@ -46,8 +48,8 @@ export class View3D {
 
     const apt = this.store.apartment;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#87a8c8');
-    scene.fog = new THREE.Fog('#87a8c8', 30, 90);
+    scene.background = skyTexture();
+    scene.fog = new THREE.Fog('#c8d8e8', 35, 95);
     this.scene = scene;
 
     // ---- Geometrie aus dem Grundriss (cm -> m) ----
@@ -69,27 +71,33 @@ export class View3D {
     // Umgebung (Wiese)
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(200, 200),
-      new THREE.MeshStandardMaterial({ color: '#6a8f5a', roughness: 1 })
+      new THREE.MeshStandardMaterial({ color: '#7da765', roughness: 1 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.position.set(bMinX + spanX / 2, -0.02, bMinZ + spanZ / 2);
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // Fußboden
+    // Fußboden: Parkett in der gewählten Bodenfarbe
+    const floorTex = woodFloorTexture(apt.floorColor).clone();
+    floorTex.repeat.set(spanX / 2, spanZ / 2); // Kachel = 2 m
+    floorTex.needsUpdate = true;
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(spanX, spanZ),
-      new THREE.MeshStandardMaterial({ color: apt.floorColor, roughness: 0.75 })
+      new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.55, metalness: 0.02 })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.position.set(bMinX + spanX / 2, 0, bMinZ + spanZ / 2);
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Decke (von unten sichtbar)
+    // Decke (von unten sichtbar), feiner Putz
+    const ceilTex = plasterTexture(apt.ceilingColor).clone();
+    ceilTex.repeat.set(spanX / 1.5, spanZ / 1.5);
+    ceilTex.needsUpdate = true;
     const ceiling = new THREE.Mesh(
       new THREE.PlaneGeometry(spanX, spanZ),
-      new THREE.MeshStandardMaterial({ color: apt.ceilingColor, roughness: 0.95, side: THREE.DoubleSide })
+      new THREE.MeshStandardMaterial({ map: ceilTex, roughness: 0.95, side: THREE.DoubleSide })
     );
     ceiling.rotation.x = Math.PI / 2;
     ceiling.position.set(bMinX + spanX / 2, ceilY, bMinZ + spanZ / 2);
@@ -117,10 +125,10 @@ export class View3D {
     }
 
     // ---- Licht ----
-    scene.add(new THREE.AmbientLight('#cfd8e8', 0.35));
-    const hemi = new THREE.HemisphereLight('#e8f0ff', '#5a4a3a', 0.5);
+    scene.add(new THREE.AmbientLight('#e6ddcf', 0.18));
+    const hemi = new THREE.HemisphereLight('#dceaff', '#8a6f52', 0.38);
     scene.add(hemi);
-    const sun = new THREE.DirectionalLight('#fff2dd', 1.1);
+    const sun = new THREE.DirectionalLight('#ffe9c4', 1.2);
     sun.position.set(bMinX + spanX / 2 + 15, 20, bMinZ + spanZ / 2 + 10);
     sun.target.position.set(bMinX + spanX / 2, 0, bMinZ + spanZ / 2);
     sun.castShadow = true;
@@ -141,9 +149,15 @@ export class View3D {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 1.05;
     this.container.prepend(renderer.domElement);
     this.renderer = renderer;
+
+    // Environment-Map, damit Chrom, Spiegel und Keramik realistisch reflektieren
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environmentIntensity = 0.45;
+    pmrem.dispose();
 
     const controls = new PointerLockControls(camera, renderer.domElement);
     controls.addEventListener('lock', () => this.overlay.classList.add('hidden'));
@@ -206,7 +220,10 @@ export class View3D {
     const len = Math.hypot(x2 - x1, z2 - z1);
     const height = w.height / 100;
     const geo = new THREE.BoxGeometry(len, height, w.thickness / 100);
-    const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: w.color, roughness: 0.9 }));
+    const wallTex = plasterTexture(w.color).clone();
+    wallTex.repeat.set(Math.max(1, len / 1.5), Math.max(1, height / 1.5));
+    wallTex.needsUpdate = true;
+    const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.92 }));
     mesh.position.set((x1 + x2) / 2, height / 2, (z1 + z2) / 2);
     mesh.rotation.y = -Math.atan2(z2 - z1, x2 - x1);
     mesh.castShadow = true;

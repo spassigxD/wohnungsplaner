@@ -176,7 +176,7 @@ export class Store {
 const OUTER = 24; // Außenwand 24 cm
 const INNER = 11.5; // Innenwand 11,5 cm
 const WALL_H = 260; // Raumhöhe 2,60 m
-const WALL_COLOR = '#e8e4da';
+const WALL_COLOR = '#efe9dd';
 
 function wall(x1: number, y1: number, x2: number, y2: number, thickness = INNER, color = WALL_COLOR): Wall {
   return { id: uid(), x1, y1, x2, y2, thickness, height: WALL_H, color };
@@ -217,8 +217,8 @@ export function defaultApartment(): Apartment {
 
   const furniture: FurnitureItem[] = [
     // Wohnzimmer (links)
-    item('rug', 'Teppich', 220, 330, 0, 240, 170, 1, '#b08968'),
-    item('sofa', 'Sofa', 220, 430, 0, 220, 95, 80, '#5b7a8c'),
+    item('rug', 'Teppich', 220, 330, 0, 240, 170, 1, '#c2a284'),
+    item('sofa', 'Sofa', 220, 430, 0, 220, 95, 80, '#7a8b6f'),
     item('lowboard', 'TV-Lowboard', 220, 190, 180, 180, 42, 45, '#4a3b2f'),
     item('tv', 'Fernseher 65"', 220, 186, 180, 145, 8, 84, '#101418', 'floor', 45),
     item('desk', 'Schreibtisch', 90, 100, 90, 150, 75, 75, '#8a6a4f'),
@@ -234,8 +234,8 @@ export function defaultApartment(): Apartment {
     item('plant', 'Zimmerpflanze', 415, 555, 0, 45, 45, 160, '#3f7a3f'),
     item('lamp_ceiling', 'Deckenlampe', 225, 300, 0, 45, 45, 60, '#f2e6c8', 'ceiling'),
     // Schlafzimmer (rechts oben)
-    item('bed', 'Doppelbett', 630, 130, 180, 160, 200, 45, '#7c9ab0'),
-    item('wardrobe', 'Kleiderschrank', 755, 255, 270, 220, 60, 220, '#c9bda9'),
+    item('bed', 'Doppelbett', 630, 130, 180, 160, 200, 45, '#93a9bb'),
+    item('wardrobe', 'Kleiderschrank', 755, 255, 270, 220, 60, 220, '#cfc4b0'),
     item('sideboard', 'Kommode', 480, 300, 90, 100, 42, 80, '#b39b7d'),
     item('lamp_ceiling', 'Deckenlampe', 625, 200, 0, 40, 40, 50, '#f2e6c8', 'ceiling'),
     // Bad (rechts unten)
@@ -249,7 +249,7 @@ export function defaultApartment(): Apartment {
     walls,
     furniture,
     ceilingHeight: WALL_H,
-    floorColor: '#c8a878',
-    ceilingColor: '#f4f1ea',
+    floorColor: '#b98d62',
+    ceilingColor: '#f6f3ec',
   };
 }

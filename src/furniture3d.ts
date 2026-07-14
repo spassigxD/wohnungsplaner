@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { FurnitureItem } from './model';
 import { getCatalogEntry } from './catalog';
+import { woodGrainTexture, fabricTexture } from './textures';
 
 // Alle Maße hier in Metern. Ursprung der Gruppe: Bodenmitte des Möbels
 // (bei Deckenmontage: Befestigungspunkt an der Decke, Lampe hängt nach unten).
@@ -8,6 +9,35 @@ import { getCatalogEntry } from './catalog';
 
 function mat(color: string | number, opts: Partial<THREE.MeshStandardMaterialParameters> = {}): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.8, metalness: 0.05, ...opts });
+}
+
+/** Holz mit Maserung (Tische, Schränke, Rahmen). */
+function wood(color: string): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({ map: woodGrainTexture(color), roughness: 0.65, metalness: 0.02 });
+}
+
+/** Stoff mit Gewebestruktur (Sofas, Matratzen, Teppiche). */
+function fabric(color: string): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({ map: fabricTexture(color), roughness: 0.95, metalness: 0 });
+}
+
+/** Glänzende Keramik (WC, Waschbecken, Badewanne). */
+function ceramic(color: string): THREE.MeshPhysicalMaterial {
+  return new THREE.MeshPhysicalMaterial({ color, roughness: 0.18, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.2 });
+}
+
+/** Chrom für Armaturen. */
+function chrome(): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({ color: '#c8ced4', metalness: 0.9, roughness: 0.22 });
+}
+
+function sphere(r: number, material: THREE.Material, x = 0, y = 0, z = 0, scaleY = 1, scaleZ = 1): THREE.Mesh {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), material);
+  m.position.set(x, y, z);
+  m.scale.set(1, scaleY, scaleZ);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  return m;
 }
 
 function box(w: number, h: number, d: number, material: THREE.Material, x = 0, y = 0, z = 0): THREE.Mesh {
@@ -36,12 +66,12 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
   switch (item.type) {
     case 'bed':
     case 'bed_single': {
-      const frame = mat('#6b5138');
+      const frame = wood('#6b5138');
       g.add(box(w, h * 0.45, d, frame));
-      g.add(box(w * 0.97, h * 0.35, d * 0.97, mat(c), 0, h * 0.45));
+      g.add(box(w * 0.97, h * 0.35, d * 0.97, fabric(c), 0, h * 0.45));
       g.add(box(w, h * 0.9, 0.06, frame, 0, 0, d / 2 - 0.03)); // Kopfteil hinten
       const pillowW = item.type === 'bed' ? w * 0.42 : w * 0.8;
-      const pillow = mat('#f5f2ea');
+      const pillow = fabric('#f5f2ea');
       if (item.type === 'bed') {
         g.add(box(pillowW, 0.09, 0.42, pillow, -w * 0.25, h * 0.8, d / 2 - 0.3));
         g.add(box(pillowW, 0.09, 0.42, pillow, w * 0.25, h * 0.8, d / 2 - 0.3));
@@ -52,7 +82,7 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
     }
     case 'sofa':
     case 'armchair': {
-      const base = mat(c);
+      const base = fabric(c);
       const armW = Math.min(0.18, w * 0.12);
       g.add(box(w, h * 0.45, d, base)); // Sitzfläche
       g.add(box(w, h, d * 0.28, base, 0, 0, d / 2 - d * 0.14)); // Rückenlehne
@@ -61,37 +91,37 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
       break;
     }
     case 'chair': {
-      const wood = mat(c);
+      const m = wood(c);
       const seatH = h * 0.5;
-      g.add(box(w, 0.04, d, wood, 0, seatH));
-      g.add(box(w, h - seatH, 0.04, wood, 0, seatH, d / 2 - 0.02)); // Lehne hinten
+      g.add(box(w, 0.04, d, m, 0, seatH));
+      g.add(box(w, h - seatH, 0.04, m, 0, seatH, d / 2 - 0.02)); // Lehne hinten
       const legR = 0.02;
       for (const [lx, lz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-        g.add(cylinder(legR, legR, seatH, wood, lx * (w / 2 - 0.04), 0, lz * (d / 2 - 0.04), 8));
+        g.add(cylinder(legR, legR, seatH, m, lx * (w / 2 - 0.04), 0, lz * (d / 2 - 0.04), 8));
       }
       break;
     }
     case 'dining_table':
     case 'desk':
     case 'coffee_table': {
-      const wood = mat(c);
+      const m = wood(c);
       const topT = 0.04;
-      g.add(box(w, topT, d, wood, 0, h - topT));
+      g.add(box(w, topT, d, m, 0, h - topT));
       const legS = 0.05;
       for (const [lx, lz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-        g.add(box(legS, h - topT, legS, wood, lx * (w / 2 - legS), 0, lz * (d / 2 - legS)));
+        g.add(box(legS, h - topT, legS, m, lx * (w / 2 - legS), 0, lz * (d / 2 - legS)));
       }
       break;
     }
     case 'shelf': {
-      const wood = mat(c);
+      const m = wood(c);
       const t = 0.025;
-      g.add(box(t, h, d, wood, -w / 2 + t / 2, 0));
-      g.add(box(t, h, d, wood, w / 2 - t / 2, 0));
-      g.add(box(w, t, d, wood, 0, 0));
+      g.add(box(t, h, d, m, -w / 2 + t / 2, 0));
+      g.add(box(t, h, d, m, w / 2 - t / 2, 0));
+      g.add(box(w, t, d, m, 0, 0));
       const boards = 4;
       for (let i = 1; i <= boards; i++) {
-        g.add(box(w - t * 2, t, d, wood, 0, (h / boards) * i - t));
+        g.add(box(w - t * 2, t, d, m, 0, (h / boards) * i - t));
       }
       break;
     }
@@ -99,7 +129,7 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
     case 'sideboard':
     case 'lowboard':
     case 'kitchen': {
-      const body = mat(c);
+      const body = item.type === 'kitchen' ? mat(c, { roughness: 0.5 }) : wood(c);
       g.add(box(w, h, d, body));
       // Türfugen andeuten
       const line = mat('#00000055', { transparent: true, opacity: 0.35 });
@@ -219,53 +249,172 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
       break;
     }
     case 'plant': {
-      g.add(cylinder(w * 0.28, w * 0.22, h * 0.22, mat('#8a5a3a')));
-      const leaves = mat(c, { roughness: 1 });
-      const s1 = new THREE.Mesh(new THREE.SphereGeometry(w * 0.5, 12, 10), leaves);
-      s1.position.y = h * 0.55;
-      const s2 = new THREE.Mesh(new THREE.SphereGeometry(w * 0.38, 12, 10), leaves);
-      s2.position.set(w * 0.15, h * 0.82, 0.05);
-      g.add(s1, s2);
+      // Terrakotta-Topf mit Rand und Erde
+      const terracotta = mat('#b5654a', { roughness: 0.85 });
+      const potH = h * 0.2;
+      g.add(cylinder(w * 0.3, w * 0.22, potH, terracotta, 0, 0, 0, 24));
+      g.add(cylinder(w * 0.33, w * 0.33, potH * 0.18, terracotta, 0, potH * 0.85, 0, 24));
+      g.add(cylinder(w * 0.28, w * 0.28, 0.01, mat('#3a2c20', { roughness: 1 }), 0, potH - 0.008, 0, 20));
+      // Stamm mit zwei Ästen
+      const bark = mat('#7a5a3c', { roughness: 0.95 });
+      g.add(cylinder(0.014, 0.02, h * 0.45, bark, 0, potH * 0.9, 0, 10));
+      const branch1 = cylinder(0.009, 0.013, h * 0.28, bark, 0, 0, 0, 8);
+      branch1.position.set(w * 0.05, h * 0.5, 0.01);
+      branch1.rotation.z = -0.5;
+      const branch2 = cylinder(0.009, 0.013, h * 0.24, bark, 0, 0, 0, 8);
+      branch2.position.set(-w * 0.04, h * 0.45, -0.02);
+      branch2.rotation.set(0.35, 0, 0.45);
+      g.add(branch1, branch2);
+      // Blattwerk: mehrere Kugeln in zwei Grüntönen
+      const leafDark = mat(c, { roughness: 1 });
+      const light = `#${new THREE.Color(c).lerp(new THREE.Color('#d8e8a0'), 0.3).getHexString()}`;
+      const leafLight = mat(light, { roughness: 1 });
+      const blobs: [number, number, number, number, boolean][] = [
+        // [x/w, y/h, z/w, Radius/w, heller Ton?]
+        [0, 0.72, 0, 0.42, false],
+        [0.22, 0.63, 0.12, 0.3, true],
+        [-0.2, 0.6, -0.08, 0.28, false],
+        [0.1, 0.85, -0.14, 0.3, true],
+        [-0.14, 0.86, 0.12, 0.26, false],
+        [0.02, 0.95, 0.02, 0.24, true],
+        [-0.26, 0.72, 0.16, 0.2, true],
+        [0.28, 0.78, -0.05, 0.2, false],
+      ];
+      for (const [bx, by, bz, br, isLight] of blobs) {
+        g.add(sphere(w * br, isLight ? leafLight : leafDark, w * bx, h * by, w * bz, 0.82, 1));
+      }
+      // Einzelne abstehende Blätter (flache Ellipsoide)
+      const leafPositions: [number, number, number, number][] = [
+        [0.4, 0.55, 0.1, 0.8],
+        [-0.38, 0.62, -0.12, -0.7],
+        [0.05, 0.5, 0.4, 0.2],
+        [-0.1, 0.55, -0.38, -0.3],
+      ];
+      for (const [lx, ly, lz, rot] of leafPositions) {
+        const leaf = sphere(w * 0.2, leafDark, w * lx, h * ly, w * lz, 0.18, 0.5);
+        leaf.rotation.set(0.3, rot, rot * 0.4);
+        g.add(leaf);
+      }
       break;
     }
     case 'rug': {
-      const rug = box(w, Math.max(h, 0.012), d, mat(c, { roughness: 1 }));
+      const rug = box(w, Math.max(h, 0.012), d, fabric(c));
       rug.castShadow = false;
       g.add(rug);
       break;
     }
     case 'bathtub': {
-      const white = mat(c, { roughness: 0.25 });
-      g.add(box(w, h, d, white));
-      const water = mat('#7fb8d8', { roughness: 0.1, metalness: 0.1 });
-      g.add(box(w * 0.85, 0.02, d * 0.75, water, 0, h - 0.1));
+      const shell = ceramic(c);
+      const rim = 0.05;
+      // Wanne: Außenkörper + überstehender Rand + Innenraum
+      g.add(box(w, h - 0.03, d, shell));
+      g.add(box(w + 0.03, 0.035, d + 0.03, shell, 0, h - 0.035));
+      g.add(box(w - rim * 2.5, 0.01, d - rim * 2.5, ceramic('#e2e6e8'), 0, h - 0.03, 0));
+      // Wasser
+      const water = new THREE.MeshPhysicalMaterial({
+        color: '#6fb0d4',
+        roughness: 0.05,
+        metalness: 0,
+        transparent: true,
+        opacity: 0.75,
+      });
+      g.add(box(w - rim * 3, 0.015, d - rim * 3, water, 0, h - 0.09));
+      // Armatur am linken Wannenende
+      const metal = chrome();
+      const spoutX = -w / 2 + 0.12;
+      g.add(cylinder(0.016, 0.016, 0.16, metal, spoutX, h - 0.02, 0, 12));
+      const spout = cylinder(0.013, 0.013, 0.14, metal, 0, 0, 0, 12);
+      spout.position.set(spoutX + 0.06, h + 0.13, 0);
+      spout.rotation.z = Math.PI / 2;
+      g.add(spout);
+      g.add(sphere(0.022, metal, spoutX, h + 0.02, 0.09));
+      g.add(sphere(0.022, metal, spoutX, h + 0.02, -0.09));
       break;
     }
     case 'shower': {
-      g.add(box(w, 0.06, d, mat('#e8eaec', { roughness: 0.3 })));
-      const glass = new THREE.MeshStandardMaterial({
-        color: '#bcd8e8',
+      const metal = chrome();
+      // Duschtasse mit Rand und Abfluss
+      g.add(box(w, 0.07, d, ceramic('#eef0f2')));
+      g.add(box(w - 0.1, 0.012, d - 0.1, ceramic('#dde1e4'), 0, 0.07));
+      g.add(cylinder(0.035, 0.035, 0.005, mat('#5a6067', { metalness: 0.8, roughness: 0.3 }), 0, 0.082, 0, 16));
+      // Glaswände (links + vorne) mit Chromkante oben
+      const glass = new THREE.MeshPhysicalMaterial({
+        color: '#cfe4ee',
         transparent: true,
-        opacity: 0.3,
-        roughness: 0.1,
+        opacity: 0.22,
+        roughness: 0.05,
+        metalness: 0,
       });
-      g.add(box(0.01, h - 0.06, d, glass, -w / 2 + 0.01, 0.06));
-      g.add(box(w, h - 0.06, 0.01, glass, 0, 0.06, -d / 2 + 0.01));
-      g.add(cylinder(0.01, 0.01, h - 0.3, mat('#9aa5ad', { metalness: 0.7 }), w / 2 - 0.08, 0.06, d / 2 - 0.08, 8));
+      g.add(box(0.008, h - 0.07, d, glass, -w / 2 + 0.01, 0.07));
+      g.add(box(w, h - 0.07, 0.008, glass, 0, 0.07, -d / 2 + 0.01));
+      g.add(box(0.02, 0.02, d, metal, -w / 2 + 0.01, h - 0.02));
+      g.add(box(w, 0.02, 0.02, metal, 0, h - 0.02, -d / 2 + 0.01));
+      // Duschsäule hinten rechts: Stange, Brausekopf, Mischbatterie, Handbrause
+      const colX = w / 2 - 0.08;
+      const colZ = d / 2 - 0.08;
+      g.add(cylinder(0.014, 0.014, h - 0.15, metal, colX, 0.07, colZ, 12));
+      const arm = cylinder(0.011, 0.011, 0.3, metal, 0, 0, 0, 10);
+      arm.position.set(colX - 0.14, h - 0.1, colZ - 0.14);
+      arm.rotation.set(Math.PI / 2, 0, Math.PI / 4);
+      g.add(arm);
+      g.add(cylinder(0.1, 0.085, 0.02, metal, colX - 0.27, h - 0.13, colZ - 0.27, 20)); // Kopfbrause
+      g.add(cylinder(0.035, 0.045, 0.09, metal, colX, 1.1, colZ, 12)); // Mischbatterie
+      const hand = cylinder(0.02, 0.012, 0.16, metal, 0, 0, 0, 10);
+      hand.position.set(colX - 0.05, 1.32, colZ - 0.05);
+      hand.rotation.z = 0.4;
+      g.add(hand);
       break;
     }
     case 'toilet': {
-      const white = mat(c, { roughness: 0.25 });
-      g.add(box(w, h * 0.5, d * 0.5, white, 0, 0, d * 0.2)); // Spülkasten hinten
-      g.add(cylinder(w / 2, w / 2 * 0.7, h * 0.9, white, 0, 0, -d * 0.15, 16));
-      g.add(cylinder(w / 2 + 0.01, w / 2 + 0.01, 0.03, white, 0, h * 0.9, -d * 0.15, 16));
+      const body = ceramic(c);
+      // Spülkasten hinten mit Drücker
+      g.add(box(w, 0.4, 0.15, body, 0, h * 0.75, d / 2 - 0.075));
+      g.add(box(w * 0.3, 0.012, 0.08, chrome(), 0, h * 0.75 + 0.4, d / 2 - 0.08));
+      // Fuß (elliptisch) und Becken
+      const foot = cylinder(w * 0.24, w * 0.3, h * 0.6, body, 0, 0, -d * 0.08, 18);
+      foot.scale.z = 1.5;
+      g.add(foot);
+      const bowl = cylinder(w * 0.48, w * 0.36, h * 0.4, body, 0, h * 0.55, -d * 0.1, 20);
+      bowl.scale.z = 1.35;
+      g.add(bowl);
+      // Sitzring + geschlossener Deckel
+      const seat = new THREE.Mesh(new THREE.TorusGeometry(w * 0.4, 0.022, 10, 24), ceramic('#fbfbf9'));
+      seat.rotation.x = Math.PI / 2;
+      seat.scale.y = 1.3; // nach Rotation: Tiefe
+      seat.position.set(0, h * 0.96, -d * 0.1);
+      seat.castShadow = true;
+      g.add(seat);
+      const lid = cylinder(w * 0.44, w * 0.44, 0.018, ceramic('#f6f6f3'), 0, h * 0.97, -d * 0.1, 20);
+      lid.scale.z = 1.3;
+      g.add(lid);
       break;
     }
     case 'sink': {
-      const white = mat(c, { roughness: 0.25 });
-      g.add(cylinder(0.08, 0.1, h - 0.15, white)); // Standfuß
-      g.add(box(w, 0.15, d, white, 0, h - 0.15));
-      g.add(cylinder(0.012, 0.012, 0.15, mat('#9aa5ad', { metalness: 0.8, roughness: 0.2 }), 0, h - 0.02, d / 2 - 0.08, 8));
+      const body = ceramic(c);
+      const basinH = 0.16;
+      // Standfuß (konisch) und ovales Becken
+      g.add(cylinder(0.055, 0.09, h - basinH, body, 0, 0, d * 0.05, 16));
+      const basin = cylinder(w / 2, w * 0.3, basinH, body, 0, h - basinH, 0, 22);
+      basin.scale.z = d / w;
+      g.add(basin);
+      const inner = cylinder(w * 0.4, w * 0.25, 0.012, ceramic('#e8ebec'), 0, h - 0.012, 0, 20);
+      inner.scale.z = d / w;
+      g.add(inner);
+      // Armatur hinten: Säule + gebogener Auslauf + Griff
+      const metal = chrome();
+      g.add(cylinder(0.013, 0.013, 0.14, metal, 0, h - 0.01, d / 2 - 0.09, 12));
+      const spout = cylinder(0.01, 0.01, 0.1, metal, 0, 0, 0, 10);
+      spout.position.set(0, h + 0.125, d / 2 - 0.14);
+      spout.rotation.x = Math.PI / 2;
+      g.add(spout);
+      g.add(sphere(0.018, metal, 0.05, h + 0.06, d / 2 - 0.09));
+      // Spiegel darüber (an der Wandseite)
+      const mirror = new THREE.Mesh(
+        new THREE.BoxGeometry(w * 0.95, 0.6, 0.015),
+        new THREE.MeshStandardMaterial({ color: '#c4d8de', metalness: 1, roughness: 0.04 })
+      );
+      mirror.position.set(0, h + 0.65, d / 2 - 0.008);
+      g.add(mirror);
       break;
     }
     default: {

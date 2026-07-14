@@ -28,9 +28,14 @@ function setupToolbar(store: Store, editor: Editor2D): void {
     store.snap = Number(snapSelect.value);
   });
 
-  document.getElementById('zoom-in')!.addEventListener('click', () => editor.zoomBy(1.3));
-  document.getElementById('zoom-out')!.addEventListener('click', () => editor.zoomBy(1 / 1.3));
   document.getElementById('zoom-fit')!.addEventListener('click', () => editor.centerOnContent());
+
+  // Menü nach Klick auf einen Eintrag schließen
+  const menu = document.getElementById('menu') as HTMLDetailsElement;
+  menu.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => (menu.open = false)));
+  document.addEventListener('click', (e) => {
+    if (menu.open && !menu.contains(e.target as Node)) menu.open = false;
+  });
 
   document.getElementById('btn-export')!.addEventListener('click', () => {
     const blob = new Blob([store.exportJson()], { type: 'application/json' });
