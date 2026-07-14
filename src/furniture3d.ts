@@ -3,6 +3,21 @@ import type { FurnitureItem } from './model';
 import { getCatalogEntry } from './catalog';
 import { woodGrainTexture, fabricTexture } from './textures';
 import { cornerSofaLayout } from './cornerSofa';
+import {
+  buildBreakfastBar,
+  buildKitchenBaseCabinet,
+  buildKitchenFridge,
+  buildKitchenHob,
+  buildKitchenHood,
+  buildKitchenIsland,
+  buildKitchenLine,
+  buildKitchenMicrowave,
+  buildKitchenOpenShelf,
+  buildKitchenSink,
+  buildKitchenStove,
+  buildKitchenWallCabinet,
+  buildKitchenWineCooler,
+} from './kitchen3d';
 
 // Alle Maße hier in Metern. Ursprung der Gruppe: Bodenmitte des Möbels
 // (bei Deckenmontage: Befestigungspunkt an der Decke, Lampe hängt nach unten).
@@ -149,26 +164,91 @@ export function buildFurniture(item: FurnitureItem): THREE.Group {
     }
     case 'wardrobe':
     case 'sideboard':
-    case 'lowboard':
-    case 'kitchen': {
-      const body = item.type === 'kitchen' ? mat(c, { roughness: 0.5 }) : wood(c);
+    case 'lowboard': {
+      const body = wood(c);
       g.add(box(w, h, d, body));
-      // Türfugen andeuten
       const line = mat('#00000055', { transparent: true, opacity: 0.35 });
       const doors = Math.max(2, Math.round(w / 0.5));
       for (let i = 1; i < doors; i++) {
         g.add(box(0.006, h * 0.92, 0.005, line, -w / 2 + (w / doors) * i, h * 0.04, -d / 2 - 0.002));
       }
-      if (item.type === 'kitchen') {
-        g.add(box(w, 0.03, d + 0.02, mat('#3c3f42'), 0, h - 0.03, 0)); // Arbeitsplatte
-        g.add(box(0.55, 0.02, 0.5, mat('#23262a', { metalness: 0.6, roughness: 0.3 }), -w * 0.25, h, 0)); // Kochfeld
-        g.add(box(0.5, 0.14, 0.4, mat('#d8dde0', { metalness: 0.4, roughness: 0.3 }), w * 0.25, h - 0.16, 0)); // Spüle
-      }
       break;
     }
-    case 'fridge': {
+    case 'kitchen':
+      buildKitchenLine(g, w, h, d, c);
+      break;
+    case 'kitchen_island':
+      buildKitchenIsland(g, w, h, d, c);
+      break;
+    case 'kitchen_base_60':
+      buildKitchenBaseCabinet(g, w, h, d, c, { doors: 1 });
+      break;
+    case 'kitchen_base_80':
+      buildKitchenBaseCabinet(g, w, h, d, c, { doors: 2 });
+      break;
+    case 'kitchen_sink_base':
+      buildKitchenBaseCabinet(g, w, h, d, c, { doors: 2, sink: true });
+      break;
+    case 'kitchen_corner':
+      buildKitchenBaseCabinet(g, w, h, d, c, { doors: 2 });
+      g.add(box(w * 0.42, h * 0.92, d * 0.42, mat(c, { roughness: 0.5 }), w * 0.29, 0, d * 0.29));
+      break;
+    case 'kitchen_drawer':
+      buildKitchenBaseCabinet(g, w, h, d, c, { doors: 1, drawer: true });
+      break;
+    case 'kitchen_oven':
+      buildKitchenBaseCabinet(g, w, h, d, c, { doors: 1, oven: true, hob: true });
+      break;
+    case 'kitchen_dishwasher':
+      buildKitchenBaseCabinet(g, w, h, d, c, { doors: 1, dishwasher: true, countertop: true });
+      break;
+    case 'kitchen_trash':
+      buildKitchenBaseCabinet(g, w, h, d, c, { doors: 1, trash: true });
+      break;
+    case 'kitchen_wall_60':
+    case 'kitchen_wall_80':
+      buildKitchenWallCabinet(g, w, h, d, c);
+      break;
+    case 'kitchen_open_shelf':
+      buildKitchenOpenShelf(g, w, h, d, c);
+      break;
+    case 'kitchen_hood':
+      buildKitchenHood(g, w, h, d, c);
+      break;
+    case 'kitchen_hob':
+      buildKitchenHob(g, w, h, d);
+      break;
+    case 'kitchen_sink':
+      buildKitchenSink(g, w, h, d, c);
+      break;
+    case 'kitchen_stove':
+      buildKitchenStove(g, w, h, d, c);
+      break;
+    case 'kitchen_microwave':
+      buildKitchenMicrowave(g, w, h, d, c);
+      break;
+    case 'kitchen_breakfast_bar':
+      buildBreakfastBar(g, w, h, d, c);
+      break;
+    case 'kitchen_fridge_tall':
+    case 'fridge':
+    case 'kitchen_freezer':
+      buildKitchenFridge(g, w, h, d, c);
+      break;
+    case 'kitchen_fridge_side':
+      buildKitchenFridge(g, w, h, d, c, true);
+      break;
+    case 'kitchen_wine_cooler':
+      buildKitchenWineCooler(g, w, h, d, c);
+      break;
+    case 'kitchen_washing_machine':
+    case 'kitchen_dryer': {
       g.add(box(w, h, d, mat(c, { metalness: 0.35, roughness: 0.4 })));
-      g.add(box(0.025, 0.35, 0.025, mat('#8a9095', { metalness: 0.7, roughness: 0.3 }), w * 0.35, h * 0.55, -d / 2 - 0.02));
+      g.add(box(w * 0.82, h * 0.55, 0.03, mat('#e4e8eb', { metalness: 0.45 }), 0, h * 0.45, -d / 2 - 0.012));
+      g.add(box(w * 0.55, 0.02, 0.02, chrome(), 0, h * 0.12, -d / 2 - 0.02));
+      if (item.type === 'kitchen_washing_machine') {
+        g.add(cylinder(0.22, 0.22, 0.03, mat('#c8ced4', { metalness: 0.7 }), 0, h * 0.45, -d / 2 - 0.02, 24));
+      }
       break;
     }
     case 'tv':

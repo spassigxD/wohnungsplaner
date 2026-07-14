@@ -20,7 +20,8 @@ in einer **First-Person-Ansicht** begehen.
   - Schlafen: Doppelbett (160×200), Einzelbett (90×200), Kleiderschrank
   - Technik: Schreibtisch, **Monitor**, **PC-Tower**, **Fernseher**, TV-Lowboard
   - Lampen: **Stehlampe**, Tischlampe, **Deckenlampe (Pendel)**, flache Deckenleuchte – alle leuchten in 3D echt
-  - Küche & Bad: Küchenzeile, Kühlschrank, Badewanne, Dusche, Waschbecken, WC
+  - Küche & Bad: Küchenzeile, **Unterschränke, Oberschränke, Spüle, Kochfeld, Backofen, Geschirrspüler, Dunstabzugshaube, Kücheninsel**, Kühlschrank, Gefrierschrank, Mikrowelle, Waschmaschine, Trockner, Weinkühlschrank
+  - Bad: Badewanne, Dusche, Waschbecken, WC
 - **3D-First-Person-Ansicht**
   - Frei durch die Wohnung laufen: `WASD` + Maus, `Shift` = rennen, Augenhöhe 1,60 m
   - Decken inklusive – Deckenlampen hängen von der Decke und beleuchten die Räume
